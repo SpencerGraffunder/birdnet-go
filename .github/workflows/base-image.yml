@@ -97,12 +97,24 @@ jobs:
           EVENT: ${{ github.event_name }}
         run: |
           REF="${{ steps.meta.outputs.base-repo }}:${{ steps.meta.outputs.tag }}"
+          # FORK PATCH (2026-11-19): if this repo's registry has no base yet but the
+          # identical content-addressed tag is already published upstream, reuse the
+          # upstream image instead of rebuilding. The base recipe's downloads can rot
+          # after publication (the pinned ONNX Runtime v1.32.0 GitHub release was
+          # removed upstream in Nov 2026, so a from-scratch base build 404s), while
+          # the exact base image still exists at ghcr.io/tphakala/birdnet-go-base.
+          # Force/schedule/dispatch refreshes still rebuild locally, as upstream.
+          FALLBACK_REF="ghcr.io/tphakala/birdnet-go-base:${{ steps.meta.outputs.tag }}"
           if [ "$FORCE" = "true" ] || [ "$EVENT" = "schedule" ] || [ "$EVENT" = "workflow_dispatch" ]; then
             echo "forced rebuild (event=${EVENT}); will rebuild ${REF}"
             echo "build=true" >> "$GITHUB_OUTPUT"
           elif docker manifest inspect "$REF" >/dev/null 2>&1; then
             echo "Base ${REF} already published; skipping build"
             echo "build=false" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.repository }}" != "tphakala/birdnet-go" ] && docker manifest inspect "$FALLBACK_REF" >/dev/null 2>&1; then
+            echo "Base ${REF} missing here but ${FALLBACK_REF} is published upstream; reusing it"
+            echo "build=false" >> "$GITHUB_OUTPUT"
+            echo "use-ref=${FALLBACK_REF}" >> "$GITHUB_OUTPUT"
           else
             echo "Base ${REF} missing; will build"
             echo "build=true" >> "$GITHUB_OUTPUT"
@@ -143,11 +155,25 @@ jobs:
           # reproducibility: a later monthly refresh moving the tag cannot silently
           # change what an already-built app image was built against, while the
           # identical blobs still dedup on pull.
-          REF="${{ steps.meta.outputs.base-repo }}:${{ steps.meta.outputs.tag }}"
+          # FORK PATCH: when the upstream base was reused (see "exists" step),
+          # resolve the digest from that reference instead of this repo's tag.
+          USE_REF="${{ steps.exists.outputs.use-ref }}"
+          if [ -n "$USE_REF" ]; then
+            REF="$USE_REF"
+          else
+            REF="${{ steps.meta.outputs.base-repo }}:${{ steps.meta.outputs.tag }}"
+          fi
           DIGEST=$(docker buildx imagetools inspect "$REF" --format '{{.Manifest.Digest}}')
           if [ -z "$DIGEST" ]; then
             echo "Failed to resolve digest for ${REF}" >&2; exit 1
           fi
-          BASE_REF="${{ steps.meta.outputs.base-repo }}@${DIGEST}"
+          # FORK PATCH: keep the registry prefix of whatever REF we resolved above
+          # (upstream base repo when reused, this repo's otherwise) so the digest
+          # pin points at an image that actually exists under that name.
+          if [ -n "$USE_REF" ]; then
+            BASE_REF="${USE_REF%:*}@${DIGEST}"
+          else
+            BASE_REF="${{ steps.meta.outputs.base-repo }}@${DIGEST}"
+          fi
           echo "base-ref=${BASE_REF}" >> "$GITHUB_OUTPUT"
           echo "Resolved base reference: ${BASE_REF}"
