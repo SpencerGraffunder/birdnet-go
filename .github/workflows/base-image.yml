@@ -99,22 +99,25 @@ jobs:
           REF="${{ steps.meta.outputs.base-repo }}:${{ steps.meta.outputs.tag }}"
           # FORK PATCH (2026-11-19): if this repo's registry has no base yet but the
           # identical content-addressed tag is already published upstream, reuse the
-          # upstream image instead of rebuilding. The base recipe's downloads can rot
-          # after publication (the pinned ONNX Runtime v1.32.0 GitHub release was
-          # removed upstream in Nov 2026, so a from-scratch base build 404s), while
-          # the exact base image still exists at ghcr.io/tphakala/birdnet-go-base.
-          # Force/schedule/dispatch refreshes still rebuild locally, as upstream.
+          # upstream image instead of rebuilding — INCLUDING on force/dispatch runs:
+          # this fork's from-scratch base build is broken by upstream download rot
+          # (pinned ONNX Runtime v1.32.0 GitHub release was removed Nov 2026, so the
+          # runtime-base recipe 404s), while the exact base image already exists at
+          # ghcr.io/tphakala/birdnet-go-base. Guarded by the repo-name check so
+          # upstream behavior (force/schedule = local security refresh) is untouched.
           FALLBACK_REF="ghcr.io/tphakala/birdnet-go-base:${{ steps.meta.outputs.tag }}"
-          if [ "$FORCE" = "true" ] || [ "$EVENT" = "schedule" ] || [ "$EVENT" = "workflow_dispatch" ]; then
+          if [ "${{ github.repository }}" != "tphakala/birdnet-go" ] \
+            && ! docker manifest inspect "$REF" >/dev/null 2>&1 \
+            && docker manifest inspect "$FALLBACK_REF" >/dev/null 2>&1; then
+            echo "Base ${REF} missing here but ${FALLBACK_REF} is published upstream; reusing it"
+            echo "build=false" >> "$GITHUB_OUTPUT"
+            echo "use-ref=${FALLBACK_REF}" >> "$GITHUB_OUTPUT"
+          elif [ "$FORCE" = "true" ] || [ "$EVENT" = "schedule" ] || [ "$EVENT" = "workflow_dispatch" ]; then
             echo "forced rebuild (event=${EVENT}); will rebuild ${REF}"
             echo "build=true" >> "$GITHUB_OUTPUT"
           elif docker manifest inspect "$REF" >/dev/null 2>&1; then
             echo "Base ${REF} already published; skipping build"
             echo "build=false" >> "$GITHUB_OUTPUT"
-          elif [ "${{ github.repository }}" != "tphakala/birdnet-go" ] && docker manifest inspect "$FALLBACK_REF" >/dev/null 2>&1; then
-            echo "Base ${REF} missing here but ${FALLBACK_REF} is published upstream; reusing it"
-            echo "build=false" >> "$GITHUB_OUTPUT"
-            echo "use-ref=${FALLBACK_REF}" >> "$GITHUB_OUTPUT"
           else
             echo "Base ${REF} missing; will build"
             echo "build=true" >> "$GITHUB_OUTPUT"
