@@ -41,7 +41,15 @@
   import type { TabDefinition } from '$lib/desktop/features/settings/components/SettingsTabs.svelte';
   import { t } from '$lib/i18n';
   import SelectDropdown from '$lib/desktop/components/forms/SelectDropdown.svelte';
-  import { Bird, Radio, Activity, Binoculars, Network, ChartLine } from '@lucide/svelte';
+  import {
+    Bird,
+    Radio,
+    Activity,
+    Binoculars,
+    Network,
+    ChartLine,
+    AudioWaveform,
+  } from '@lucide/svelte';
   import {
     integrationSettings,
     realtimeSettings,
@@ -154,6 +162,13 @@
     )
   );
 
+  let xenoCantoHasChanges = $derived(
+    hasSettingsChanged(
+      (store.originalData as SettingsFormData)?.realtime?.xenoCanto,
+      (store.formData as SettingsFormData)?.realtime?.xenoCanto
+    )
+  );
+
   // Validate eBird: enabled requires API key
   $effect(() => {
     const EBIRD_ERROR_KEY = 'ebird-api-key-required';
@@ -225,10 +240,12 @@
     birdweather: { stages: Stage[]; isRunning: boolean; showSuccessNote: boolean };
     mqtt: { stages: Stage[]; isRunning: boolean; showSuccessNote: boolean };
     ebird: { stages: Stage[]; isRunning: boolean; showSuccessNote: boolean };
+    xenoCanto: { stages: Stage[]; isRunning: boolean; showSuccessNote: boolean };
   }>({
     birdweather: { stages: [], isRunning: false, showSuccessNote: false },
     mqtt: { stages: [], isRunning: false, showSuccessNote: false },
     ebird: { stages: [], isRunning: false, showSuccessNote: false },
+    xenoCanto: { stages: [], isRunning: false, showSuccessNote: false },
   });
 
   // Tab state
@@ -337,6 +354,13 @@
       icon: Binoculars,
       content: ebirdTabContent,
       hasChanges: ebirdHasChanges,
+    },
+    {
+      id: 'xenoCanto',
+      label: t('settings.integration.xenoCanto.title'),
+      icon: AudioWaveform,
+      content: xenoCantoTabContent,
+      hasChanges: xenoCantoHasChanges,
     },
     {
       id: 'prometheus',
@@ -550,6 +574,37 @@
     { value: 'pt', label: 'Português' },
     { value: 'sk', label: 'Slovenčina' },
   ];
+
+  // Xeno-Canto update handlers
+  function updateXenoCantoEnabled(enabled: boolean) {
+    settingsActions.updateSection('realtime', {
+      xenoCanto: { ...settings.xenoCanto, enabled },
+    });
+  }
+
+  function updateXenoCantoApiKey(apiKey: string) {
+    settingsActions.updateSection('realtime', {
+      xenoCanto: { ...settings.xenoCanto, apiKey },
+    });
+  }
+
+  function updateXenoCantoMaxClipSeconds(maxClipSeconds: number) {
+    settingsActions.updateSection('realtime', {
+      xenoCanto: { ...settings.xenoCanto, maxClipSeconds },
+    });
+  }
+
+  function updateXenoCantoPrefetch(prefetch: boolean) {
+    settingsActions.updateSection('realtime', {
+      xenoCanto: { ...settings.xenoCanto, prefetch },
+    });
+  }
+
+  function updateXenoCantoTranscode(transcode: boolean) {
+    settingsActions.updateSection('realtime', {
+      xenoCanto: { ...settings.xenoCanto, transcode },
+    });
+  }
 
   // Test functions with multi-stage operations
   async function testBirdWeather() {
@@ -1145,6 +1200,181 @@
         logger.debug('Clearing eBird test results after timeout');
         testStates.ebird.stages = [];
         testStates.ebird.showSuccessNote = false;
+      }, 30000);
+    }
+  }
+
+  async function testXenoCanto() {
+    logger.debug('Starting Xeno-Canto test...');
+    testStates.xenoCanto.isRunning = true;
+    testStates.xenoCanto.stages = [];
+
+    try {
+      const currentXenoCanto = store.formData?.realtime?.xenoCanto ?? settings.xenoCanto;
+
+      const testPayload = {
+        enabled: currentXenoCanto.enabled || false,
+        apiKey: currentXenoCanto.apiKey || '',
+      };
+
+      const headers = new Headers({
+        'Content-Type': 'application/json',
+      });
+
+      const token = getCsrfToken();
+      if (token) {
+        headers.set('X-CSRF-Token', token);
+      }
+
+      logger.debug(
+        'Sending Xeno-Canto test request with payload:',
+        redactForLogging(testPayload, ['apiKey'])
+      );
+
+      const response = await fetch(buildAppUrl('/api/v2/integrations/xeno-canto/test'), {
+        method: 'POST',
+        headers,
+        credentials: 'same-origin',
+        body: JSON.stringify(testPayload),
+      });
+
+      logger.debug('Xeno-Canto test response status:', response.status, response.statusText);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        throw new Error(t('settings.integration.errors.responseStreamFailed'));
+      }
+
+      let remaining = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        remaining += decoder.decode(value, { stream: true });
+        logger.debug('Raw Xeno-Canto chunk received:', remaining);
+
+        const lines = remaining.split('\n');
+        remaining = lines.pop() || '';
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+
+          try {
+            const stageResult = JSON.parse(trimmed);
+            logger.debug('Xeno-Canto test result received:', stageResult);
+
+            if (!stageResult.id) continue;
+
+            const stage: Stage = {
+              id: stageResult.id,
+              title: stageResult.title || t('settings.integration.errors.testStageFallback'),
+              status: stageResult.status || 'pending',
+              message: stageResult.message || '',
+              error: stageResult.error || '',
+            };
+
+            const existingIndex = testStates.xenoCanto.stages.findIndex(s => s.id === stage.id);
+            if (existingIndex === -1) {
+              testStates.xenoCanto.stages.push(stage);
+            } else {
+              const existingStage = safeArrayAccess(testStates.xenoCanto.stages, existingIndex);
+              if (
+                existingStage &&
+                existingIndex >= 0 &&
+                existingIndex < testStates.xenoCanto.stages.length
+              ) {
+                testStates.xenoCanto.stages.splice(existingIndex, 1, {
+                  ...existingStage,
+                  ...stage,
+                });
+              }
+            }
+          } catch (parseError) {
+            logger.error('Failed to parse Xeno-Canto test result:', parseError, trimmed);
+          }
+        }
+      }
+
+      // Flush decoder and process any final non-newline-terminated line
+      remaining += decoder.decode();
+      const finalLine = remaining.trim();
+      if (finalLine) {
+        try {
+          const stageResult = JSON.parse(finalLine);
+          logger.debug('Xeno-Canto test final result received:', stageResult);
+
+          if (stageResult.id) {
+            const stage: Stage = {
+              id: stageResult.id,
+              title: stageResult.title || t('settings.integration.errors.testStageFallback'),
+              status: stageResult.status || 'pending',
+              message: stageResult.message || '',
+              error: stageResult.error || '',
+            };
+
+            const existingIndex = testStates.xenoCanto.stages.findIndex(s => s.id === stage.id);
+            if (existingIndex === -1) {
+              testStates.xenoCanto.stages.push(stage);
+            } else {
+              const existingStage = safeArrayAccess(testStates.xenoCanto.stages, existingIndex);
+              if (
+                existingStage &&
+                existingIndex >= 0 &&
+                existingIndex < testStates.xenoCanto.stages.length
+              ) {
+                testStates.xenoCanto.stages.splice(existingIndex, 1, {
+                  ...existingStage,
+                  ...stage,
+                });
+              }
+            }
+          }
+        } catch (parseError) {
+          logger.error('Failed to parse Xeno-Canto test final result:', parseError, finalLine);
+        }
+      }
+    } catch (error) {
+      logger.error('Xeno-Canto test failed:', error);
+
+      if (testStates.xenoCanto.stages.length === 0) {
+        testStates.xenoCanto.stages.push({
+          id: 'error',
+          title: t('settings.integration.errors.connectionError'),
+          status: 'error',
+          error: error instanceof Error ? error.message : t('common.errors.unknownError'),
+        });
+      } else {
+        const lastIndex = testStates.xenoCanto.stages.length - 1;
+        const lastStage = safeArrayAccess(testStates.xenoCanto.stages, lastIndex);
+        if (lastStage && lastStage.status !== 'completed' && lastStage.status !== 'error') {
+          testStates.xenoCanto.stages.splice(lastIndex, 1, {
+            ...lastStage,
+            status: 'error' as const,
+            error: error instanceof Error ? error.message : t('common.errors.unknownError'),
+          });
+        }
+      }
+    } finally {
+      testStates.xenoCanto.isRunning = false;
+      logger.debug('Xeno-Canto test finished, stages:', testStates.xenoCanto.stages);
+
+      const allStagesCompleted =
+        testStates.xenoCanto.stages.length > 0 &&
+        testStates.xenoCanto.stages.every(stage => stage.status === 'completed');
+      testStates.xenoCanto.showSuccessNote = allStagesCompleted && xenoCantoHasChanges;
+
+      setTimeout(() => {
+        logger.debug('Clearing Xeno-Canto test results after timeout');
+        testStates.xenoCanto.stages = [];
+        testStates.xenoCanto.showSuccessNote = false;
       }, 30000);
     }
   }
@@ -1754,6 +1984,133 @@
 
             <SettingsNote>
               <span>{t('settings.integration.ebird.note')}</span>
+            </SettingsNote>
+          </div>
+        </fieldset>
+      </div>
+    </SettingsSection>
+  </div>
+{/snippet}
+
+{#snippet xenoCantoTabContent()}
+  <div class="space-y-6">
+    <!-- Xeno-Canto Settings Card -->
+    <SettingsSection
+      title={t('settings.integration.xenoCanto.title')}
+      icon={AudioWaveform}
+      description={t('settings.integration.xenoCanto.description')}
+      originalData={(store.originalData as SettingsFormData)?.realtime?.xenoCanto}
+      currentData={(store.formData as SettingsFormData)?.realtime?.xenoCanto}
+    >
+      <div class="space-y-4">
+        <Checkbox
+          checked={settings.xenoCanto.enabled}
+          label={t('settings.integration.xenoCanto.enable')}
+          disabled={store.isLoading || store.isSaving}
+          onchange={updateXenoCantoEnabled}
+        />
+
+        <!-- Fieldset for accessible disabled state -->
+        <fieldset
+          disabled={!settings.xenoCanto.enabled || store.isLoading || store.isSaving}
+          class="contents"
+          aria-describedby="xenoCanto-status"
+        >
+          <span id="xenoCanto-status" class="sr-only">
+            {settings.xenoCanto.enabled
+              ? t('settings.integration.xenoCanto.enable')
+              : t('settings.integration.xenoCanto.enabledRequired')}
+          </span>
+          <div
+            class="transition-opacity duration-200"
+            class:opacity-50={!settings.xenoCanto.enabled}
+          >
+            <!-- API key help banner (same treatment as the eBird card) -->
+            <ErrorAlert type="info" className="mb-4">
+              {#snippet children()}
+                {@html t('settings.integration.xenoCanto.apiKeyInfo')}
+              {/snippet}
+            </ErrorAlert>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <PasswordField
+                label={t('settings.integration.xenoCanto.apiKey.label')}
+                value={settings.xenoCanto.apiKey}
+                onUpdate={updateXenoCantoApiKey}
+                placeholder=""
+                helpText={t('settings.integration.xenoCanto.apiKey.helpText')}
+                disabled={!settings.xenoCanto.enabled || store.isLoading || store.isSaving}
+                allowReveal={true}
+              />
+
+              <NumberField
+                label={t('settings.integration.xenoCanto.maxClipSeconds.label')}
+                value={settings.xenoCanto.maxClipSeconds}
+                onUpdate={updateXenoCantoMaxClipSeconds}
+                min={1}
+                max={60}
+                step={1}
+                placeholder="10"
+                helpText={t('settings.integration.xenoCanto.maxClipSeconds.helpText')}
+                disabled={!settings.xenoCanto.enabled || store.isLoading || store.isSaving}
+              />
+            </div>
+
+            <div class="space-y-4 mt-4">
+              <Checkbox
+                checked={settings.xenoCanto.prefetch}
+                label={t('settings.integration.xenoCanto.prefetch.label')}
+                helpText={t('settings.integration.xenoCanto.prefetch.helpText')}
+                disabled={!settings.xenoCanto.enabled || store.isLoading || store.isSaving}
+                onchange={updateXenoCantoPrefetch}
+              />
+
+              <Checkbox
+                checked={settings.xenoCanto.transcode}
+                label={t('settings.integration.xenoCanto.transcode.label')}
+                helpText={t('settings.integration.xenoCanto.transcode.helpText')}
+                disabled={!settings.xenoCanto.enabled || store.isLoading || store.isSaving}
+                onchange={updateXenoCantoTranscode}
+              />
+            </div>
+
+            <!-- Test Connection -->
+            <div class="space-y-4 mt-4">
+              <div class="flex items-center gap-3">
+                <SettingsButton
+                  onclick={testXenoCanto}
+                  loading={testStates.xenoCanto.isRunning}
+                  loadingText={t('settings.integration.xenoCanto.test.loading')}
+                  disabled={!(
+                    store.formData?.realtime?.xenoCanto?.enabled ?? settings.xenoCanto.enabled
+                  ) || testStates.xenoCanto.isRunning}
+                >
+                  {t('settings.integration.xenoCanto.test.button')}
+                </SettingsButton>
+                <span class="text-sm text-[var(--color-base-content)] opacity-70">
+                  {#if !(store.formData?.realtime?.xenoCanto?.enabled ?? settings.xenoCanto.enabled)}
+                    {t('settings.integration.xenoCanto.test.enabledRequired')}
+                  {:else if testStates.xenoCanto.isRunning}
+                    {t('settings.integration.xenoCanto.test.inProgress')}
+                  {:else}
+                    {t('settings.integration.xenoCanto.test.description')}
+                  {/if}
+                </span>
+              </div>
+
+              {#if testStates.xenoCanto.stages.length > 0}
+                <MultiStageOperation
+                  stages={testStates.xenoCanto.stages}
+                  variant="compact"
+                  showProgress={false}
+                />
+              {/if}
+
+              <TestSuccessNote show={testStates.xenoCanto.showSuccessNote} />
+            </div>
+
+            <SettingsNote>
+              <span>{t('settings.integration.xenoCanto.note')}</span>
             </SettingsNote>
           </div>
         </fieldset>

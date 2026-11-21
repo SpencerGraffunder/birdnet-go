@@ -121,6 +121,10 @@ func (c *Handler) RegisterRoutes(g *echo.Group) {
 	ebirdGroup := integrationsGroup.Group("/ebird")
 	ebirdGroup.POST("/test", c.TestEBirdConnection)
 
+	// Xeno-Canto routes (example-call source)
+	xenoCantoGroup := integrationsGroup.Group("/xeno-canto")
+	xenoCantoGroup.POST("/test", c.TestXenoCantoConnection)
+
 	c.LogInfoIfEnabled("Integrations routes initialized successfully")
 }
 
@@ -674,7 +678,7 @@ func (c *Handler) TestWeatherConnection(ctx echo.Context) error {
 		if err := sendStage(WeatherTestStage{
 			ID:      stage.id,
 			Title:   stage.title,
-			Status:  "completed",
+			Status:  streamStateCompleted,
 			Message: message,
 		}); err != nil {
 			return nil // Client disconnected
@@ -1020,7 +1024,7 @@ func (c *Handler) TestEBirdConnection(ctx echo.Context) error {
 		if err := sendStage(WeatherTestStage{
 			ID:      stage.id,
 			Title:   stage.title,
-			Status:  "completed",
+			Status:  streamStateCompleted,
 			Message: message,
 		}); err != nil {
 			return nil

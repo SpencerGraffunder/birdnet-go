@@ -153,6 +153,10 @@ func (s *APIServerService) Start(ctx context.Context) error {
 	// Initialize bird image cache.
 	s.birdImageCache = initBirdImageCache(s.settings, dataStore, s.metrics)
 
+	// Initialize the Xeno-Canto example-call cache and queue the species this
+	// install already knows, so an example call is ready before anyone asks.
+	initSpeciesSoundCache(s.settings, dataStore)
+
 	// Create SunCalc for sunrise/sunset calculations.
 	s.sunCalc = newStationSunCalc(s.settings)
 

@@ -35,6 +35,7 @@ import (
 	"github.com/tphakala/birdnet-go/internal/errors"
 	"github.com/tphakala/birdnet-go/internal/events"
 	"github.com/tphakala/birdnet-go/internal/logger"
+	"github.com/tphakala/birdnet-go/internal/speciesaudio"
 )
 
 // errAudioExportDeferred signals that SaveAudioAction cannot yet read the
@@ -442,6 +443,15 @@ func (a *DatabaseAction) recordSaveSuccess(ctx context.Context, attempt int) {
 
 	// After successful save, publish detection event to the event bus.
 	a.publishDetectionEvent(ctx, a.isNewSpecies, a.daysSinceFirstSeen, a.novelty)
+
+	// First sighting of a species: queue its example call so the play button on
+	// the detection detail page is ready by the time anyone looks for it. This
+	// is a no-op when the integration is disabled or already cached, and it
+	// never blocks the detection pipeline (the cache's own queue and pacer do
+	// the work, at one request per second).
+	if a.isNewSpecies {
+		speciesaudio.PrefetchSpecies(a.Result.Species.ScientificName)
+	}
 
 	// NOTE: Audio export is intentionally NOT performed here.
 	// It runs as a separate action (SaveAudioAction) outside the CompositeAction

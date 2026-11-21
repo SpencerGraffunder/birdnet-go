@@ -1,13 +1,16 @@
 <!--
-  IdentityCard - what was detected and when: species photo, names, taxonomy,
-  status chips, confidence, the button that opens the model's other
-  predictions, and a row with the date, time and source.
+  IdentityCard - what was detected and when: species photo with a button that
+  plays a published example call of the species, names, taxonomy, status chips,
+  confidence, the button that opens the model's other predictions, and a row
+  with the date, time and source.
 
   The card has one height for every detection, so the review controls under it
   stay where they are while stepping through detections. That height comes from
   content that is always there: each text area is one line, cut with an ellipsis
   when it does not fit, and no line is held empty in case text wraps. A long
-  species name is set in smaller type instead of taking a second line.
+  species name is set in smaller type instead of taking a second line. The
+  example-call button occupies a slot of its own under the photo, whether or not
+  a call is available for the species.
 -->
 <script lang="ts">
   import { Calendar, Camera, Clock, ListTree, Moon, Sun, Sunrise, Sunset } from '@lucide/svelte';
@@ -20,6 +23,7 @@
   import type { ImageAttribution } from '$lib/types/detection.types';
   import { buildAppUrl } from '$lib/utils/urlHelpers';
   import DetailCard from './DetailCard.svelte';
+  import SpeciesCallButton from './SpeciesCallButton.svelte';
   import { formatPercent, replacedModelPick, toPercent } from './detailFormat';
   import { formatCalendarDate, type SunOffset } from './detailTime';
   import type { DetectionDetailData, SpeciesRarity, TaxonomyHierarchy } from './detailTypes';
@@ -144,33 +148,36 @@
 <DetailCard padding="even">
   <div class="dd-identity">
     <div class="dd-identity-upper">
-      <div class="dd-identity-photo">
-        <img
-          src={buildAppUrl(
-            `/api/v2/media/species-image?name=${encodeURIComponent(detection.scientificName)}`
-          )}
-          alt={displayName}
-          onerror={handleBirdImageError}
-          loading="eager"
-        />
-        {#if creditAuthor || creditLicense}
-          <div class="dd-identity-credit">
-            <Camera size={10} aria-hidden="true" />
-            {#if creditAuthor}
-              <span class="dd-identity-credit-author">{creditAuthor}</span>
-            {/if}
-            {#if creditAuthor && creditLicense}
-              <span aria-hidden="true">·</span>
-            {/if}
-            {#if creditLicense && creditLicenseUrl}
-              <a href={creditLicenseUrl} target="_blank" rel="noopener noreferrer"
-                >{creditLicense}</a
-              >
-            {:else if creditLicense}
-              <span>{creditLicense}</span>
-            {/if}
-          </div>
-        {/if}
+      <div class="dd-identity-media">
+        <div class="dd-identity-photo">
+          <img
+            src={buildAppUrl(
+              `/api/v2/media/species-image?name=${encodeURIComponent(detection.scientificName)}`
+            )}
+            alt={displayName}
+            onerror={handleBirdImageError}
+            loading="eager"
+          />
+          {#if creditAuthor || creditLicense}
+            <div class="dd-identity-credit">
+              <Camera size={10} aria-hidden="true" />
+              {#if creditAuthor}
+                <span class="dd-identity-credit-author">{creditAuthor}</span>
+              {/if}
+              {#if creditAuthor && creditLicense}
+                <span aria-hidden="true">·</span>
+              {/if}
+              {#if creditLicense && creditLicenseUrl}
+                <a href={creditLicenseUrl} target="_blank" rel="noopener noreferrer"
+                  >{creditLicense}</a
+                >
+              {:else if creditLicense}
+                <span>{creditLicense}</span>
+              {/if}
+            </div>
+          {/if}
+        </div>
+        <SpeciesCallButton scientificName={detection.scientificName} />
       </div>
 
       <div class="dd-identity-main">
@@ -304,6 +311,17 @@
   .dd-identity-upper {
     display: flex;
     gap: 1.25rem;
+    min-width: 0;
+  }
+
+  /* The picture and the example-call button under it are one column: the button
+     belongs to the picture it plays a sound of. */
+  .dd-identity-media {
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: column;
+    align-items: flex-start;
+    align-self: flex-start;
     min-width: 0;
   }
 

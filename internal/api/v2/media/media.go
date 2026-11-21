@@ -376,6 +376,10 @@ func (c *Handler) RegisterRoutes(g *echo.Group) {
 	g.GET("/media/species-image", c.GetSpeciesImage)
 	g.GET("/media/species-image/info", c.GetSpeciesImageInfo)
 
+	// Species example-call endpoints (Xeno-Canto). Datastore-independent like
+	// the image routes: they serve the local sound cache and never touch c.DS.
+	c.RegisterSpeciesSoundRoutes(g)
+
 	// Proxied bird image endpoints (serve cached files, solve CORS)
 	g.GET("/media/image/:scientific_name", c.ServeSpeciesImageProxy)
 	g.GET("/media/bird-image/:scientific_name", c.ServeSpeciesImageProxy) // backward-compat alias

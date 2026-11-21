@@ -206,6 +206,14 @@ var hotReloadRegistry = map[string]hotReloadEntry{
 	// -- eBird --
 	"Realtime.EBird": {categories: []hotReloadCategory{hotReloadFresh}, action: "reconfigure_ebird"},
 
+	// -- Xeno-Canto (example calls) --
+	// The example-call cache rebuilds its providers and clip limits from these
+	// fields on the reconfigure_xeno_canto control action, so a newly entered API
+	// key or clip cap applies on save with no restart. Already-cached clips are
+	// never dropped by a settings change (disabling the feature only stops serving
+	// them), which is why nothing here needs a restart.
+	"Realtime.XenoCanto": {categories: []hotReloadCategory{hotReloadFresh}, action: "reconfigure_xeno_canto"},
+
 	// -- OpenWeather (runtime, yaml:"-") --
 	"Realtime.OpenWeather": {categories: []hotReloadCategory{hotReloadRuntime}},
 

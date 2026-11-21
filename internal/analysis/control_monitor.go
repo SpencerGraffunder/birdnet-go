@@ -302,6 +302,8 @@ func (cm *ControlMonitor) handleControlSignal(signal string) {
 		cm.handleReconfigureBirdWeather()
 	case "reconfigure_ebird":
 		cm.handleReconfigureEBird()
+	case "reconfigure_xeno_canto":
+		cm.handleReconfigureXenoCanto()
 	case "update_detection_intervals":
 		cm.handleUpdateDetectionIntervals()
 	case "reconfigure_sound_level":

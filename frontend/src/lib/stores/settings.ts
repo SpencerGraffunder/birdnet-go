@@ -449,12 +449,27 @@ export interface EBirdSettings {
   locale: string; // locale for eBird data (e.g., "en", "es")
 }
 
+/**
+ * Xeno-Canto example-call settings. The example call is the short recording
+ * played next to a species photo; lookups work without a key, but a free
+ * personal key switches them to Xeno-Canto's API, which is more reliable.
+ */
+export interface XenoCantoSettings {
+  enabled: boolean;
+  apiKey: string;
+  maxClipSeconds: number; // longer clips are trimmed to this on store (default 10)
+  prefetch: boolean; // fetch on first sighting of a species (default true)
+  transcode: boolean; // convert/trim with ffmpeg (default true)
+  maxCacheSpecies: number; // 0 = unlimited
+}
+
 export interface IntegrationSettings {
   birdweather: BirdWeatherSettings;
   mqtt: MQTTSettings;
   observability: ObservabilitySettings;
   weather: WeatherSettings;
   ebird: EBirdSettings;
+  xenoCanto: XenoCantoSettings;
 }
 
 export interface BirdWeatherSettings {
@@ -682,6 +697,7 @@ export interface RealtimeSettings {
   speciesTracking?: SpeciesTrackingSettings;
   extendedCapture?: ExtendedCaptureSettings;
   ebird?: EBirdSettings;
+  xenoCanto?: XenoCantoSettings;
 }
 
 // WebServer settings
@@ -1155,6 +1171,14 @@ function createEmptySettings(): SettingsFormData & { security: SecuritySettings 
         cacheTTL: 24,
         locale: 'en',
       },
+      xenoCanto: {
+        enabled: true,
+        apiKey: '',
+        maxClipSeconds: 10,
+        prefetch: true,
+        transcode: true,
+        maxCacheSpecies: 0,
+      },
       species: {
         include: [],
         exclude: [],
@@ -1405,6 +1429,14 @@ export const integrationSettings = derived(settingsStore, $store => ({
     apiKey: '',
     cacheTTL: 24,
     locale: 'en',
+  },
+  xenoCanto: $store.formData.realtime?.xenoCanto ?? {
+    enabled: true,
+    apiKey: '',
+    maxClipSeconds: 10,
+    prefetch: true,
+    transcode: true,
+    maxCacheSpecies: 0,
   },
 }));
 

@@ -259,6 +259,15 @@ func setDefaultConfig() {
 	viper.SetDefault("realtime.ebird.cachettl", 24) // 24 hours default
 	viper.SetDefault("realtime.ebird.locale", "en")
 
+	// Xeno-Canto example-call configuration. Enabled by default because the
+	// feature works without a key; the key only makes it more reliable.
+	viper.SetDefault("realtime.xenocanto.enabled", true)
+	viper.SetDefault("realtime.xenocanto.apikey", "")
+	viper.SetDefault("realtime.xenocanto.maxclipseconds", 10)
+	viper.SetDefault("realtime.xenocanto.prefetch", true)
+	viper.SetDefault("realtime.xenocanto.transcode", true)
+	viper.SetDefault("realtime.xenocanto.maxcachespecies", 0)
+
 	// OpenWeather configuration
 	/*
 		viper.SetDefault("realtime.OpenWeather.Enabled", false)

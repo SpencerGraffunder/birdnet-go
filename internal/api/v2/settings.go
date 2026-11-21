@@ -1748,6 +1748,9 @@ func sanitizeSettingsForAPI(s *conf.Settings) *conf.Settings {
 	// --- eBird API key ---
 	sanitized.Realtime.EBird.APIKey = redact(s.Realtime.EBird.APIKey)
 
+	// --- Xeno-Canto API key ---
+	sanitized.Realtime.XenoCanto.APIKey = redact(s.Realtime.XenoCanto.APIKey)
+
 	// Backup targets may contain FTP/SFTP/S3 credentials in their Settings map.
 	// Copy the slice and redact known secret keys.
 	if len(s.Backup.Targets) > 0 {
@@ -1860,6 +1863,9 @@ func restoreRedactedSecrets(current, incoming *conf.Settings) error {
 	// eBird
 	restore(&current.Realtime.EBird.APIKey, &incoming.Realtime.EBird.APIKey)
 
+	// Xeno-Canto
+	restore(&current.Realtime.XenoCanto.APIKey, &incoming.Realtime.XenoCanto.APIKey)
+
 	// Backup target secrets, match by Type to handle reordering
 	for i := range incoming.Backup.Targets {
 		if incoming.Backup.Targets[i].Settings == nil {
@@ -1949,6 +1955,7 @@ func validateNoRedactedSentinels(s *conf.Settings) error {
 	check(s.Realtime.Weather.Wunderground.APIKey, "realtime.weather.wunderground.apiKey")
 	check(s.Realtime.Weather.PirateWeather.APIKey, "realtime.weather.pirateWeather.apiKey")
 	check(s.Realtime.EBird.APIKey, "realtime.ebird.apiKey")
+	check(s.Realtime.XenoCanto.APIKey, "realtime.xenoCanto.apiKey")
 
 	// Array-based OAuth providers
 	for i := range s.Security.OAuthProviders {
@@ -2428,6 +2435,7 @@ var settingsChangeChecks = []settingsChangeCheck{
 	{"MQTT", "reconfigure_mqtt", mqttSettingsChanged, "Reconfiguring MQTT connection...", notification.MsgSettingsReconfiguringMqtt, ToastTypeInfo, toastDurationMedium},
 	{"BirdWeather", "reconfigure_birdweather", birdWeatherSettingsChanged, "Reconfiguring BirdWeather integration...", notification.MsgSettingsReconfiguringBirdweather, ToastTypeInfo, toastDurationMedium},
 	{"eBird", "reconfigure_ebird", ebirdSettingsChanged, "Reconfiguring eBird integration...", notification.MsgSettingsReconfiguringEbird, ToastTypeInfo, toastDurationMedium},
+	{"Xeno-Canto", "reconfigure_xeno_canto", xenoCantoSettingsChanged, "Applying Xeno-Canto example-call settings...", "", ToastTypeInfo, toastDurationShort},
 	{"Streams", "reconfigure_rtsp_sources", streamsSettingsChanged, "Reconfiguring audio streams...", notification.MsgSettingsReconfiguringStreams, ToastTypeInfo, toastDurationMedium},
 	{"Telemetry", "reconfigure_telemetry", telemetrySettingsChanged, "Reconfiguring telemetry settings...", notification.MsgSettingsReconfiguringTelemetry, ToastTypeInfo, toastDurationShort},
 	{"Sentry", telemetry.SignalReconfigureSentry, sentryEnabledChanged, "", "", ToastTypeInfo, toastDurationShort},
@@ -2968,6 +2976,14 @@ func birdWeatherSettingsChanged(oldSettings, currentSettings *conf.Settings) boo
 // rather than a restart prompt.
 func ebirdSettingsChanged(oldSettings, currentSettings *conf.Settings) bool {
 	return !reflect.DeepEqual(oldSettings.Realtime.EBird, currentSettings.Realtime.EBird)
+}
+
+// xenoCantoSettingsChanged reports whether any Xeno-Canto example-call setting
+// changed. The example-call cache is rebuilt live from these settings (the
+// reconfigure_xeno_canto control action), so a newly entered API key takes
+// effect without a restart.
+func xenoCantoSettingsChanged(oldSettings, currentSettings *conf.Settings) bool {
+	return !reflect.DeepEqual(oldSettings.Realtime.XenoCanto, currentSettings.Realtime.XenoCanto)
 }
 
 // pushNotificationSettingsChanged checks if push notification settings have changed.

@@ -358,6 +358,32 @@ type EBirdSettings struct {
 	Locale   string `yaml:"locale" json:"locale"`     // locale for eBird data (e.g., "en", "es")
 }
 
+// XenoCantoSettings contains settings for the Xeno-Canto integration, which
+// supplies the short example call played next to a species photo.
+//
+// The integration is useful without an API key (the public species listing page
+// is used), but Xeno-Canto asks users with an account to query the API instead,
+// and the API path is more reliable, so a free personal key is recommended. The
+// key belongs to one installation and is entered in Settings → Integrations; it
+// is never baked into a container image.
+type XenoCantoSettings struct {
+	Enabled bool   `yaml:"enabled" json:"enabled"` // true to enable example-call lookups (default: true)
+	APIKey  string `yaml:"apikey" json:"apiKey"`   // Xeno-Canto API key, empty to use the public listing page
+	// MaxClipSeconds is the hard cap applied when a clip is stored: longer
+	// recordings are trimmed to this length. Zero selects the default (10), a
+	// negative value disables trimming.
+	MaxClipSeconds int `yaml:"maxclipseconds" json:"maxClipSeconds"`
+	// Prefetch downloads the example call the first time a species is seen, so
+	// the play button works instantly for every species already detected.
+	Prefetch bool `yaml:"prefetch" json:"prefetch"` // default: true
+	// Transcode converts stored clips to mp3 and trims them with ffmpeg. When
+	// disabled the recording is stored exactly as published.
+	Transcode bool `yaml:"transcode" json:"transcode"` // default: true
+	// MaxCacheSpecies caps how many species get a stored clip. 0 means no cap,
+	// which is the default: one short clip per species is a few hundred KB.
+	MaxCacheSpecies int `yaml:"maxcachespecies" json:"maxCacheSpecies"`
+}
+
 // WeatherSettings contains all weather-related settings
 type WeatherSettings struct {
 	Provider      string                `yaml:"provider" json:"provider"`           // "none", "yrno", "openweather", "wunderground", or "pirateweather"
@@ -930,6 +956,7 @@ type RealtimeSettings struct {
 	LogDeduplication LogDeduplicationSettings `yaml:"logdeduplication" json:"logDeduplication"` // Log deduplication settings
 	Birdweather      BirdweatherSettings      `yaml:"birdweather" json:"birdweather"`           // Birdweather integration settings
 	EBird            EBirdSettings            `yaml:"ebird" json:"ebird"`                       // eBird integration settings
+	XenoCanto        XenoCantoSettings        `yaml:"xenocanto" json:"xenoCanto"`               // Xeno-Canto example-call settings
 	OpenWeather      OpenWeatherSettings      `yaml:"-" json:"-"`                               // OpenWeather integration settings
 	PrivacyFilter    PrivacyFilterSettings    `yaml:"privacyfilter" json:"privacyFilter"`       // Privacy filter settings
 	DogBarkFilter    DogBarkFilterSettings    `yaml:"dogbarkfilter" json:"dogBarkFilter"`       // Dog bark filter settings
