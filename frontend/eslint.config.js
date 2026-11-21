@@ -25,6 +25,7 @@ const browserGlobals = {
   MessageEvent: 'readonly',
   KeyboardEvent: 'readonly',
   MouseEvent: 'readonly',
+  PointerEvent: 'readonly',
   DragEvent: 'readonly',
   FocusEvent: 'readonly',
   HTMLElement: 'readonly',

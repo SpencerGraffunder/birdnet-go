@@ -2,8 +2,9 @@
   SpectrogramPlayer.svelte
 
   Compact audio player for constrained contexts (table cells, card grids).
-  Shows a spectrogram image with play/pause overlay and progress bar.
-  Uses the shared useAudioPlayback composable for battle-tested audio engine.
+  Shows a spectrogram image with play/pause overlay and a scrubable timeline along
+  the bottom edge. Uses the shared useAudioPlayback composable for battle-tested
+  audio engine.
 
   For full-featured playback with clip extraction, processing controls,
   and AudioToolbar, use AudioPlayer.svelte instead.
@@ -35,6 +36,13 @@
     isTerminalSpectrogramReason,
     markSpectrogramSourceMissing,
   } from '$lib/utils/spectrogramStatus';
+  import {
+    usableDuration,
+    clampSeconds,
+    seekTimeFromPointer,
+    seekKeyAction,
+    seekSliderValueText,
+  } from '$lib/utils/seek';
 
   const logger = loggers.audio;
 
@@ -209,6 +217,62 @@
     }
   }
 
+  // --- Timeline scrubbing ---
+  // The same slider model as the full player (see $lib/utils/seek): positions are seeked
+  // by time rather than by pointer geometry, so the pointer and the keyboard steps land on
+  // the same places, and an unusable duration disables the control instead of lying about
+  // its range. The spectrogram spans the whole clip, so x/width is the clip fraction.
+  let seekBar = $state<HTMLDivElement | null>(null);
+  let isScrubbing = $state(false);
+  const seekMax = $derived(usableDuration(audio.duration));
+  const seekNow = $derived(clampSeconds(audio.currentTime, seekMax));
+  const seekValueText = $derived(seekSliderValueText(seekNow, seekMax));
+
+  function seekToClientX(clientX: number) {
+    if (!seekBar || seekMax <= 0) return;
+    const target = seekTimeFromPointer(clientX, seekBar.getBoundingClientRect(), seekMax);
+    if (target !== null) audio.seek(target);
+  }
+
+  function handleScrubPointerDown(event: PointerEvent) {
+    // Left button only for a mouse; touch and pen carry no button semantics to honour.
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    // Three separate intents sit on top of each other here: the strip scrubs, the image
+    // toggles play/pause and the row opens the detail page. Stop at the strip.
+    event.stopPropagation();
+    if (seekMax <= 0) return;
+    isScrubbing = true;
+    seekBar?.setPointerCapture(event.pointerId);
+    seekToClientX(event.clientX);
+  }
+
+  function handleScrubPointerMove(event: PointerEvent) {
+    if (!isScrubbing) return;
+    event.stopPropagation();
+    seekToClientX(event.clientX);
+  }
+
+  function endScrub(event: PointerEvent) {
+    if (!isScrubbing) return;
+    isScrubbing = false;
+    // Capture is released by the browser on pointerup/cancel; release defensively for the
+    // element the pointer left mid-gesture.
+    if (seekBar?.hasPointerCapture(event.pointerId)) {
+      seekBar.releasePointerCapture(event.pointerId);
+    }
+  }
+
+  function handleScrubKeydown(event: KeyboardEvent) {
+    const action = seekKeyAction(event, seekNow, seekMax);
+    if (action.preventDefault) event.preventDefault();
+    if (action.target !== null) audio.seek(action.target);
+  }
+
+  // A click on the strip also bubbles to the row, which opens the detection detail.
+  function handleScrubClick(event: MouseEvent) {
+    event.stopPropagation();
+  }
+
   function handlePlayClick(e: MouseEvent) {
     e.stopPropagation();
     audio.togglePlayPause();
@@ -263,12 +327,32 @@
       {/if}
     </button>
 
-    <!-- Progress bar (bottom edge) -->
-    {#if audio.progress > 0}
-      <div class="progress-track">
-        <div class="progress-fill" style:width="{audio.progress}%"></div>
-      </div>
-    {/if}
+    <!-- Timeline along the bottom edge: click or drag to scrub, arrows to step. It is
+         always present for a clip (a control you must start playing before you can use is
+         the clunky part), and reports aria-disabled while the length is still unknown. -->
+    <div
+      bind:this={seekBar}
+      class="seek-strip"
+      class:is-scrubbing={isScrubbing}
+      role="slider"
+      tabindex="0"
+      aria-label={t('media.audio.seek')}
+      aria-valuemin={0}
+      aria-valuemax={seekMax}
+      aria-valuenow={seekNow}
+      aria-valuetext={seekValueText}
+      aria-disabled={seekMax <= 0 ? 'true' : undefined}
+      onpointerdown={handleScrubPointerDown}
+      onpointermove={handleScrubPointerMove}
+      onpointerup={endScrub}
+      onpointercancel={endScrub}
+      onkeydown={handleScrubKeydown}
+      onclick={handleScrubClick}
+    >
+      <div class="seek-rail"></div>
+      <div class="seek-fill" style:width="{audio.progress}%"></div>
+      <div class="seek-thumb" style:left="{audio.progress}%"></div>
+    </div>
   </div>
 
   <!-- Audio error -->
@@ -337,20 +421,77 @@
     opacity: 1;
   }
 
-  /* Thin progress bar at bottom edge */
-  .progress-track {
+  /* Timeline: the same 3px line as before, inside a 14px invisible strip so the control
+     is grabbable by touch and a thumb can appear on hover/focus without changing the
+     resting look of the row. */
+  .seek-strip {
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
+    height: 14px;
+    z-index: 2;
+    cursor: pointer;
+    touch-action: none;
+    user-select: none;
+  }
+
+  .seek-rail,
+  .seek-fill {
+    position: absolute;
+    bottom: 0;
+    left: 0;
     height: 3px;
+  }
+
+  .seek-rail {
+    right: 0;
     background: rgb(255 255 255 / 0.2);
   }
 
-  .progress-fill {
-    height: 100%;
+  .seek-fill {
+    width: 0;
     background: var(--color-primary);
-    transition: width 0.1s linear;
+    transition:
+      width 0.1s linear,
+      height 0.15s ease;
+  }
+
+  /* Hidden by scale rather than display, so the appearance transition runs. */
+  .seek-thumb {
+    position: absolute;
+    bottom: 0;
+    width: 9px;
+    height: 9px;
+    border: 1px solid var(--color-base-100);
+    border-radius: 50%;
+    background: var(--color-primary);
+    transform: translate(-50%, -1px) scale(0);
+    transition: transform 0.15s ease;
+  }
+
+  .seek-strip:hover .seek-fill,
+  .seek-strip:focus-visible .seek-fill,
+  .seek-strip.is-scrubbing .seek-fill {
+    height: 4px;
+  }
+
+  .seek-strip:hover .seek-thumb,
+  .seek-strip:focus-visible .seek-thumb,
+  .seek-strip.is-scrubbing .seek-thumb {
+    transform: translate(-50%, -1px) scale(1);
+  }
+
+  .seek-strip:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 1px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .seek-fill,
+    .seek-thumb {
+      transition: none;
+    }
   }
 
   .audio-error {

@@ -279,7 +279,7 @@ describe('SpectrogramPlayer', () => {
   // ---------------------------------------------------------------
   // 6. Progress bar appears during playback
   // ---------------------------------------------------------------
-  it('shows progress bar when progress is greater than zero', () => {
+  it('shows the timeline fill tracking progress', () => {
     mockAudioState.progress = 42;
 
     const { container } = spectrogramTest.render({
@@ -287,13 +287,13 @@ describe('SpectrogramPlayer', () => {
       detectionId: 'test-123',
     });
 
-    const progressFill = container.querySelector('.progress-fill');
+    const progressFill = container.querySelector('.seek-fill');
     expect(progressFill).toBeInTheDocument();
     // Svelte's style:width directive sets the inline style attribute
     expect((progressFill as HTMLElement).style.width).toBe('42%');
   });
 
-  it('does not show progress bar when progress is zero', () => {
+  it('keeps the timeline on screen at zero progress so a clip can be scrubbed before it plays', () => {
     mockAudioState.progress = 0;
 
     const { container } = spectrogramTest.render({
@@ -301,8 +301,11 @@ describe('SpectrogramPlayer', () => {
       detectionId: 'test-123',
     });
 
-    const progressTrack = container.querySelector('.progress-track');
-    expect(progressTrack).not.toBeInTheDocument();
+    const strip = container.querySelector('.seek-strip');
+    expect(strip).toBeInTheDocument();
+    expect((strip as HTMLElement).querySelector('.seek-fill')?.getAttribute('style')).toContain(
+      'width: 0%'
+    );
   });
 
   // ---------------------------------------------------------------
@@ -573,6 +576,189 @@ describe('SpectrogramPlayer', () => {
       }
 
       expect(statusFetch).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  // ---------------------------------------------------------------
+  // Timeline scrubbing
+  // ---------------------------------------------------------------
+  describe('timeline scrubbing', () => {
+    const RECT = { left: 0, top: 0, right: 200, bottom: 14, width: 200, height: 14, x: 0, y: 0 };
+
+    /** The strip is the only slider in this player. */
+    function strip() {
+      return screen.getByRole('slider');
+    }
+
+    function measureAs(width = RECT.width, left = RECT.left) {
+      // A full DOMRect cannot be built in jsdom, so the box is described here and
+      // given to the spy as the shape the component reads from it.
+      const box: Pick<
+        DOMRect,
+        'left' | 'top' | 'right' | 'bottom' | 'width' | 'height' | 'x' | 'y'
+      > = {
+        ...RECT,
+        left,
+        right: left + width,
+        width,
+        x: left,
+      };
+      vi.spyOn(strip(), 'getBoundingClientRect').mockReturnValue(box as DOMRect);
+    }
+
+    function pointerInit(clientX: number, init: Record<string, unknown> = {}) {
+      return { clientX, pointerId: 1, pointerType: 'mouse', button: 0, bubbles: true, ...init };
+    }
+
+    beforeEach(() => {
+      mockAudioState.duration = 30;
+      // jsdom has no pointer capture; the component only needs the calls to not throw.
+      Element.prototype.setPointerCapture = vi.fn();
+      Element.prototype.releasePointerCapture = vi.fn();
+      Element.prototype.hasPointerCapture = vi.fn(() => false);
+    });
+
+    it('is present before any playback so the clip can be scrubbed straight away', () => {
+      mockAudioState.progress = 0;
+      spectrogramTest.render({ audioUrl: '/api/v2/audio/test-123', detectionId: 'test-123' });
+
+      const bar = strip();
+      expect(bar).toHaveAttribute('aria-valuemax', '30');
+      expect(bar).toHaveAttribute('aria-valuenow', '0');
+      expect(bar).not.toHaveAttribute('aria-disabled');
+    });
+
+    it('reports itself disabled while the clip length is unknown', () => {
+      mockAudioState.duration = 0;
+      spectrogramTest.render({ audioUrl: '/api/v2/audio/test-123', detectionId: 'test-123' });
+
+      const bar = strip();
+      expect(bar).toHaveAttribute('aria-disabled', 'true');
+      measureAs();
+      fireEvent.pointerDown(bar, pointerInit(100));
+      expect(mockAudioState.seek).not.toHaveBeenCalled();
+    });
+
+    it('seeks to the clicked position without touching play/pause', () => {
+      spectrogramTest.render({ audioUrl: '/api/v2/audio/test-123', detectionId: 'test-123' });
+      measureAs();
+
+      fireEvent.pointerDown(strip(), pointerInit(50));
+
+      expect(mockAudioState.seek).toHaveBeenCalledTimes(1);
+      expect(mockAudioState.seek).toHaveBeenCalledWith(7.5);
+      expect(mockAudioState.togglePlayPause).not.toHaveBeenCalled();
+    });
+
+    it('clamps a click outside the bar to the ends of the clip', () => {
+      spectrogramTest.render({ audioUrl: '/api/v2/audio/test-123', detectionId: 'test-123' });
+      measureAs();
+      const bar = strip();
+
+      fireEvent.pointerDown(bar, pointerInit(-40));
+      expect(mockAudioState.seek).toHaveBeenLastCalledWith(0);
+
+      fireEvent.pointerDown(bar, pointerInit(RECT.width + 40));
+      expect(mockAudioState.seek).toHaveBeenLastCalledWith(30);
+    });
+
+    it('scrubs while the pointer is held and stops on release', () => {
+      spectrogramTest.render({ audioUrl: '/api/v2/audio/test-123', detectionId: 'test-123' });
+      measureAs();
+      const bar = strip();
+
+      fireEvent.pointerDown(bar, pointerInit(10));
+      fireEvent.pointerMove(bar, pointerInit(100));
+      fireEvent.pointerMove(bar, pointerInit(160));
+      expect(mockAudioState.seek.mock.calls.map(call => call[0])).toEqual([1.5, 15, 24]);
+
+      fireEvent.pointerUp(bar, pointerInit(160));
+      fireEvent.pointerMove(bar, pointerInit(20));
+      expect(mockAudioState.seek).toHaveBeenCalledTimes(3);
+    });
+
+    it('ignores a right-click on the strip', () => {
+      spectrogramTest.render({ audioUrl: '/api/v2/audio/test-123', detectionId: 'test-123' });
+      measureAs();
+
+      fireEvent.pointerDown(strip(), pointerInit(50, { button: 2 }));
+
+      expect(mockAudioState.seek).not.toHaveBeenCalled();
+    });
+
+    it('treats a touch the same as a mouse even though it carries no button', () => {
+      spectrogramTest.render({ audioUrl: '/api/v2/audio/test-123', detectionId: 'test-123' });
+      measureAs();
+
+      fireEvent.pointerDown(strip(), pointerInit(100, { pointerType: 'touch', button: 0 }));
+
+      expect(mockAudioState.seek).toHaveBeenCalledWith(15);
+    });
+
+    it('steps with the keyboard the way the full player does', () => {
+      mockAudioState.currentTime = 10;
+      spectrogramTest.render({ audioUrl: '/api/v2/audio/test-123', detectionId: 'test-123' });
+      const bar = strip();
+
+      const step = (key: string) => {
+        mockAudioState.seek.mockClear();
+        fireEvent.keyDown(bar, { key });
+        return mockAudioState.seek.mock.calls[0]?.[0];
+      };
+
+      expect(step('ArrowRight')).toBe(11);
+      expect(step('ArrowLeft')).toBe(9);
+      expect(step('PageUp')).toBe(15);
+      expect(step('PageDown')).toBe(5);
+      expect(step('Home')).toBe(0);
+      expect(step('End')).toBe(30);
+    });
+
+    it('never steps past the end of the clip', () => {
+      mockAudioState.currentTime = 29.5;
+      spectrogramTest.render({ audioUrl: '/api/v2/audio/test-123', detectionId: 'test-123' });
+
+      fireEvent.keyDown(strip(), { key: 'ArrowRight' });
+
+      expect(mockAudioState.seek).toHaveBeenCalledWith(30);
+    });
+
+    it('leaves modified keys and plain typing to the browser but keeps Space from scrolling', async () => {
+      spectrogramTest.render({ audioUrl: '/api/v2/audio/test-123', detectionId: 'test-123' });
+      const bar = strip();
+
+      // Space would scroll the detections list; on a slider it means "do nothing".
+      const space = await fireEvent.keyDown(bar, { key: ' ' });
+      expect(mockAudioState.seek).not.toHaveBeenCalled();
+      expect(space).toBe(false); // preventDefault was called
+
+      const modified = await fireEvent.keyDown(bar, { key: 'ArrowRight', ctrlKey: true });
+      expect(modified).toBe(true);
+      expect(mockAudioState.seek).not.toHaveBeenCalled();
+    });
+
+    it('announces the position as a time range', () => {
+      mockAudioState.currentTime = 6;
+      spectrogramTest.render({ audioUrl: '/api/v2/audio/test-123', detectionId: 'test-123' });
+
+      expect(strip()).toHaveAttribute('aria-valuenow', '6');
+      expect(strip()).toHaveAttribute('aria-valuetext', '0:06 of 0:30');
+    });
+
+    it('keeps scrubbing inside the strip: neither play/pause nor the row click fires', () => {
+      spectrogramTest.render({ audioUrl: '/api/v2/audio/test-123', detectionId: 'test-123' });
+      measureAs();
+      const rowClick = vi.fn();
+      document.body.addEventListener('click', rowClick);
+
+      const bar = strip();
+      fireEvent.pointerDown(bar, pointerInit(50));
+      fireEvent.click(bar, { clientX: 50 });
+
+      expect(mockAudioState.seek).toHaveBeenCalledWith(7.5);
+      expect(mockAudioState.togglePlayPause).not.toHaveBeenCalled();
+      expect(rowClick).not.toHaveBeenCalled();
+      document.body.removeEventListener('click', rowClick);
     });
   });
 });
