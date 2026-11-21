@@ -949,7 +949,16 @@
         "minutesAfterSunset": "{minutes} min después del atardecer",
         "predictionsUnknown": "Otras predicciones",
         "predictionsNone": "Sin otras predicciones",
-        "predictionsCount": "{count, plural, one {# otra predicción} other {# otras predicciones}}"
+        "predictionsCount": "{count, plural, one {# otra predicción} other {# otras predicciones}}",
+        "playCall": "Reproducir llamada de ejemplo",
+        "pauseCall": "Pausar llamada de ejemplo",
+        "callLoading": "Cargando llamada de ejemplo...",
+        "callUnavailable": "No hay ninguna llamada de ejemplo disponible para esta especie",
+        "callError": "No se pudo cargar la llamada de ejemplo",
+        "callCredit": "Grabación de {recordist} - {license} vía Xeno-Canto",
+        "callCreditNoLicense": "Grabación de {recordist} vía Xeno-Canto",
+        "callCreditUnknown": "Grabación vía Xeno-Canto",
+        "callTrimmed": "Recortado desde {length} segundos"
       },
       "conditions": {
         "title": "Hora y condiciones",
@@ -3624,6 +3633,37 @@
           "apiKeyRequired": "Se requiere la clave de API",
           "inProgress": "Prueba en progreso...",
           "description": "Probar la conectividad y autenticación con la API de eBird"
+        }
+      },
+      "xenoCanto": {
+        "title": "Xeno-Canto",
+        "description": "Reproduce una breve llamada de ejemplo junto a la foto de la especie, tomada del archivo global de sonidos de aves de Xeno-Canto.",
+        "enable": "Habilitar llamadas de ejemplo",
+        "enabledRequired": "Las llamadas de ejemplo no están habilitadas",
+        "apiKey": {
+          "label": "Clave API de Xeno-Canto",
+          "helpText": "Opcional. Con una clave, las búsquedas usan la API de Xeno-Canto, más fiable que leer la página pública de especies."
+        },
+        "apiKeyInfo": "Crear una cuenta de Xeno-Canto es gratis: regístrate, confirma tu correo y copia tu clave API desde tu <a href=\"https://xeno-canto.org/account\" class=\"link link-primary\" target=\"_blank\" rel=\"noopener noreferrer\"></a>. Sin clave se usa la página pública de especies, que Xeno-Canto a veces bloquea a los visitantes automatizados.",
+        "maxClipSeconds": {
+          "label": "Duración máxima del clip (segundos)",
+          "helpText": "Las grabaciones más largas se recortan a esta duración al almacenarse. Los clips cortos se descargan rápido y bastan para reconocer un ave."
+        },
+        "prefetch": {
+          "label": "Obtener llamadas automáticamente",
+          "helpText": "Descarga una llamada de ejemplo la primera vez que se detecta una especie, para que la reproducción sea instantánea. Cada especie se obtiene una vez y se conserva."
+        },
+        "transcode": {
+          "label": "Convertir a MP3",
+          "helpText": "Convierte las llamadas almacenadas a MP3 y las recorta con ffmpeg. Mantiene la caché pequeña; si está desactivado, la grabación se guarda exactamente tal como se publicó."
+        },
+        "note": "Cada llamada conserva su atribución: el autor de la grabación y su licencia Creative Commons se muestran en el botón de reproducción. Un clip corto por especie ocupa unos cientos de kilobytes, y los clips ya almacenados se reproducen sin conexión a internet.",
+        "test": {
+          "button": "Probar búsqueda de llamada de ejemplo",
+          "loading": "Probando...",
+          "enabledRequired": "Activa primero las llamadas de ejemplo",
+          "inProgress": "Prueba en progreso...",
+          "description": "Probar que se puede encontrar una llamada de ejemplo para una especie común"
         }
       }
     },

@@ -949,7 +949,16 @@
         "minutesAfterSunset": "{minutes} min po zachodzie słońca",
         "predictionsUnknown": "Inne przewidywania",
         "predictionsNone": "Brak innych przewidywań",
-        "predictionsCount": "{count, plural, one {# inne przewidywanie} few {# inne przewidywania} many {# innych przewidywań} other {# innego przewidywania}}"
+        "predictionsCount": "{count, plural, one {# inne przewidywanie} few {# inne przewidywania} many {# innych przewidywań} other {# innego przewidywania}}",
+        "playCall": "Odtwórz przykładowy odgłos",
+        "pauseCall": "Wstrzymaj przykładowy odgłos",
+        "callLoading": "Ładowanie przykładowego odgłosu...",
+        "callUnavailable": "Brak dostępnego przykładowego odgłosu dla tego gatunku",
+        "callError": "Nie udało się wczytać przykładowego odgłosu",
+        "callCredit": "Nagranie autorstwa {recordist} - {license} z Xeno-Canto",
+        "callCreditNoLicense": "Nagranie autorstwa {recordist} z Xeno-Canto",
+        "callCreditUnknown": "Nagranie z Xeno-Canto",
+        "callTrimmed": "Skrócono z {length} sekund"
       },
       "conditions": {
         "title": "Czas i warunki",
@@ -3624,6 +3633,37 @@
           "apiKeyRequired": "Klucz API jest wymagany",
           "inProgress": "Test w toku...",
           "description": "Testuj łączność i uwierzytelnianie API eBird"
+        }
+      },
+      "xenoCanto": {
+        "title": "Xeno-Canto",
+        "description": "Odtwarza krótki przykładowy odgłos obok zdjęcia gatunku, pobrany z globalnego archiwum dźwięków ptaków Xeno-Canto.",
+        "enable": "Włącz przykładowe odgłosy",
+        "enabledRequired": "Przykładowe odgłosy nie są włączone",
+        "apiKey": {
+          "label": "Klucz API Xeno-Canto",
+          "helpText": "Opcjonalnie. Z kluczem wyszukiwanie korzysta z API Xeno-Canto, które jest bardziej niezawodne niż odczytywanie publicznej strony gatunku."
+        },
+        "apiKeyInfo": "Konto Xeno-Canto jest bezpłatne: zarejestruj się, potwierdź adres e-mail i skopiuj klucz API ze <a href=\"https://xeno-canto.org/account\" class=\"link link-primary\" target=\"_blank\" rel=\"noopener noreferrer\">strony konta</a>. Bez klucza używana jest publiczna strona gatunku, którą Xeno-Canto czasem blokuje zautomatyzowanym odwiedzającym.",
+        "maxClipSeconds": {
+          "label": "Maksymalna długość klipu (sekundy)",
+          "helpText": "Dłuższe nagrania są przy zapisywaniu skracane do tej długości. Krótkie klipy pobierają się szybko i wystarczają do rozpoznania ptaka."
+        },
+        "prefetch": {
+          "label": "Pobieraj przykładowe odgłosy automatycznie",
+          "helpText": "Pobierz przykładowy odgłos przy pierwszym wykryciu danego gatunku, aby odtwarzanie było natychmiastowe. Każdy gatunek jest pobierany jednorazowo i zachowywany."
+        },
+        "transcode": {
+          "label": "Konwertuj do MP3",
+          "helpText": "Konwertuj zapisane przykładowe odgłosy do MP3 i skracaj je za pomocą ffmpeg. Dzięki temu pamięć podręczna pozostaje mała; gdy funkcja jest wyłączona, nagranie jest zapisywane dokładnie w opublikowanej postaci."
+        },
+        "note": "Każdy przykładowy odgłos zachowuje informację o autorstwie: nagrywający i ich licencja Creative Commons są wyświetlani na przycisku odtwarzania. Krótki klip dla jednego gatunku zajmuje kilkaset kilobajtów, a zapisane klipy można odtwarzać bez połączenia z internetem.",
+        "test": {
+          "button": "Test wyszukiwania przykładowego odgłosu",
+          "loading": "Testowanie...",
+          "enabledRequired": "Najpierw włącz przykładowe odgłosy",
+          "inProgress": "Test w toku...",
+          "description": "Testuj, czy da się znaleźć przykładowy odgłos dla popularnego gatunku"
         }
       }
     },

@@ -949,7 +949,16 @@
         "minutesAfterSunset": "{minutes} min po západe slnka",
         "predictionsUnknown": "Ďalšie predpovede",
         "predictionsNone": "Žiadne ďalšie predpovede",
-        "predictionsCount": "{count, plural, one {# ďalšia predpoveď} few {# ďalšie predpovede} many {# ďalšej predpovede} other {# ďalších predpovedí}}"
+        "predictionsCount": "{count, plural, one {# ďalšia predpoveď} few {# ďalšie predpovede} many {# ďalšej predpovede} other {# ďalších predpovedí}}",
+        "playCall": "Prehrať ukážku hlasu",
+        "pauseCall": "Pozastaviť ukážku hlasu",
+        "callLoading": "Načítavanie ukážky hlasu...",
+        "callUnavailable": "Pre tento druh nie je dostupná žiadna ukážka hlasu",
+        "callError": "Nepodarilo sa načítať ukážku hlasu",
+        "callCredit": "Nahrávka od {recordist} - {license} cez Xeno-Canto",
+        "callCreditNoLicense": "Nahrávka od {recordist} cez Xeno-Canto",
+        "callCreditUnknown": "Nahrávka cez Xeno-Canto",
+        "callTrimmed": "Orezané z {length} sekúnd"
       },
       "conditions": {
         "title": "Čas a podmienky",
@@ -3624,6 +3633,37 @@
           "apiKeyRequired": "API kľúč je povinný",
           "inProgress": "Test prebieha...",
           "description": "Otestovať pripojenie a overenie API eBird"
+        }
+      },
+      "xenoCanto": {
+        "title": "Xeno-Canto",
+        "description": "Prehrá krátku ukážku hlasu vedľa fotografie druhu, prevzatú z globálneho archívu hlasov vtákov Xeno-Canto.",
+        "enable": "Povoliť ukážky hlasu",
+        "enabledRequired": "Ukážky hlasu nie sú povolené",
+        "apiKey": {
+          "label": "API kľúč Xeno-Canto",
+          "helpText": "Voliteľné. S kľúčom sa vyhľadávania vykonávajú cez API Xeno-Canto, ktoré je spolahlivejšie ako čítanie verejnej stránky druhu."
+        },
+        "apiKeyInfo": "Účet Xeno-Canto je zadarmo: zaregistrujte sa, potvrďte e-mail a skopírujte svoj API kľúč zo <a href=\"https://xeno-canto.org/account\" class=\"link link-primary\" target=\"_blank\" rel=\"noopener noreferrer\">stránky účtu</a>. Bez kľúča sa namiesto toho použije verejná stránka druhu, ktorú Xeno-Canto niekedy blokuje automatickým návštevníkom.",
+        "maxClipSeconds": {
+          "label": "Maximálna dĺžka ukážky (sekundy)",
+          "helpText": "Dlhšie nahrávky sa pri uložení orežú na túto dĺžku. Krátke ukážky sa sťahujú rýchlo a na rozpoznanie vtáka stačia."
+        },
+        "prefetch": {
+          "label": "Sťahovať ukážky automaticky",
+          "helpText": "Stiahne ukážku hlasu pri prvej detekcii druhu, takže prehrávanie je okamžité. Každý druh sa stiahne raz a zostane uložený."
+        },
+        "transcode": {
+          "label": "Previesť na MP3",
+          "helpText": "Prevedie uložené ukážky na MP3 a oreže ich pomocou ffmpeg. Udržiava cache malú; keď je funkcia vypnutá, nahrávka sa uloží presne tak, ako bola publikovaná."
+        },
+        "note": "Každá ukážka si zachováva uvedenie zdroja: autor nahrávky a jeho licencia Creative Commons sa zobrazujú na tlačidle prehrávania. Jedna krátka ukážka na druh zaberá niekoľko sto kilobajtov a už uložené ukážky sa prehrávajú aj bez pripojenia na internet.",
+        "test": {
+          "button": "Test vyhľadania ukážky hlasu",
+          "loading": "Testovanie...",
+          "enabledRequired": "Najprv povoľte ukážky hlasu",
+          "inProgress": "Test prebieha...",
+          "description": "Otestovať, či sa pre bežný druh dá nájsť ukážka hlasu"
         }
       }
     },

@@ -949,7 +949,16 @@
         "minutesAfterSunset": "{minutes} min etter solnedgang",
         "predictionsUnknown": "Andre prediksjoner",
         "predictionsNone": "Ingen andre prediksjoner",
-        "predictionsCount": "{count, plural, one {# annen prediksjon} other {# andre prediksjoner}}"
+        "predictionsCount": "{count, plural, one {# annen prediksjon} other {# andre prediksjoner}}",
+        "playCall": "Spill av eksempelrop",
+        "pauseCall": "Sett eksempelrop på pause",
+        "callLoading": "Laster eksempelrop...",
+        "callUnavailable": "Ikke noe eksempelrop tilgjengelig for denne arten",
+        "callError": "Kunne ikke laste eksempelrop",
+        "callCredit": "Opptak av {recordist} - {license} via Xeno-Canto",
+        "callCreditNoLicense": "Opptak av {recordist} via Xeno-Canto",
+        "callCreditUnknown": "Opptak via Xeno-Canto",
+        "callTrimmed": "Kuttet ned fra {length} sekunder"
       },
       "conditions": {
         "title": "Tid og forhold",
@@ -3624,6 +3633,37 @@
           "apiKeyRequired": "API-nøkkel er obligatorisk",
           "inProgress": "Test pågår...",
           "description": "Test eBird API-tilkobling og autentisering"
+        }
+      },
+      "xenoCanto": {
+        "title": "Xeno-Canto",
+        "description": "Spiller av et kort eksempelrop ved siden av artsbildet, hentet fra Xeno-Cantos globale arkiv over fuglelyder.",
+        "enable": "Aktiver eksempelrop",
+        "enabledRequired": "Eksempelrop er ikke aktivert",
+        "apiKey": {
+          "label": "Xeno-Canto API-nøkkel",
+          "helpText": "Valgfritt. Med nøkkel skjer oppslag via Xeno-Cantos API, som er mer pålitelig enn å lese den offentlige artssiden."
+        },
+        "apiKeyInfo": "En Xeno-Canto-konto er gratis: registrer deg, bekreft e-postadressen og kopier API-nøkkelen fra <a href=\"https://xeno-canto.org/account\" class=\"link link-primary\" target=\"_blank\" rel=\"noopener noreferrer\">kontosiden din</a>. Uten nøkkel brukes den offentlige artssiden i stedet, som Xeno-Canto noen ganger blokkerer for automatiserte besøkende.",
+        "maxClipSeconds": {
+          "label": "Maksimal kliplengde (sekunder)",
+          "helpText": "Lengre opptak kuttes til denne lengden når de lagres. Korte klipp lastes raskt ned og er nok til å kjenne igjen en fugl."
+        },
+        "prefetch": {
+          "label": "Hent eksempelrop automatisk",
+          "helpText": "Last ned et eksempelrop første gang en art oppdages, slik at avspilling starter umiddelbart. Hver art hentes én gang og beholdes."
+        },
+        "transcode": {
+          "label": "Konverter til MP3",
+          "helpText": "Konverter lagrede eksempelrop til MP3 og kutt dem med ffmpeg. Holder cachen liten; når funksjonen er slått av, lagres opptaket nøyaktig som publisert."
+        },
+        "note": "Alle eksempelrop beholder kildeangivelsen: opptakeren og Creative Commons-lisensen deres vises på avspillingsknappen. Ett kort klipp per art er på noen hundre kilobyte, og lagrede klipp kan spilles av uten internettilkobling.",
+        "test": {
+          "button": "Test oppslag av eksempelrop",
+          "loading": "Tester...",
+          "enabledRequired": "Aktiver eksempelrop først",
+          "inProgress": "Test pågår...",
+          "description": "Test at det finnes et eksempelrop for en vanlig art"
         }
       }
     },

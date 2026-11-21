@@ -949,7 +949,16 @@
         "minutesAfterSunset": "{minutes} min dopo il tramonto",
         "predictionsUnknown": "Altre previsioni",
         "predictionsNone": "Nessun'altra previsione",
-        "predictionsCount": "{count, plural, one {# altra previsione} other {# altre previsioni}}"
+        "predictionsCount": "{count, plural, one {# altra previsione} other {# altre previsioni}}",
+        "playCall": "Riproduci richiamo di esempio",
+        "pauseCall": "Pausa richiamo di esempio",
+        "callLoading": "Caricamento richiamo di esempio...",
+        "callUnavailable": "Nessun richiamo di esempio disponibile per questa specie",
+        "callError": "Impossibile caricare il richiamo di esempio",
+        "callCredit": "Registrazione di {recordist} - {license} via Xeno-Canto",
+        "callCreditNoLicense": "Registrazione di {recordist} via Xeno-Canto",
+        "callCreditUnknown": "Registrazione via Xeno-Canto",
+        "callTrimmed": "Tagliato da {length} secondi"
       },
       "conditions": {
         "title": "Ora e condizioni",
@@ -3624,6 +3633,37 @@
           "apiKeyRequired": "La chiave API è obbligatoria",
           "inProgress": "Test in corso...",
           "description": "Testa la connettività e l'autenticazione dell'API eBird"
+        }
+      },
+      "xenoCanto": {
+        "title": "Xeno-Canto",
+        "description": "Riproduce un breve richiamo di esempio accanto alla foto della specie, tratto dall'archivio globale di versi di uccelli Xeno-Canto.",
+        "enable": "Abilita richiami di esempio",
+        "enabledRequired": "Richiami di esempio non abilitati",
+        "apiKey": {
+          "label": "Chiave API Xeno-Canto",
+          "helpText": "Facoltativa. Con una chiave, le ricerche usano l'API di Xeno-Canto, più affidabile della lettura della pagina pubblica della specie."
+        },
+        "apiKeyInfo": "L'account Xeno-Canto è gratuito: registrati, conferma la tua email e copia la chiave API dalla tua <a href=\"https://xeno-canto.org/account\" class=\"link link-primary\" target=\"_blank\" rel=\"noopener noreferrer\">pagina dell'account</a>. Senza chiave viene usata la pagina pubblica della specie, che Xeno-Canto a volte blocca ai visitatori automatici.",
+        "maxClipSeconds": {
+          "label": "Durata massima clip (secondi)",
+          "helpText": "Le registrazioni più lunghe vengono tagliate a questa durata al momento del salvataggio. Le clip brevi si scaricano velocemente e sono sufficienti per riconoscere un uccello."
+        },
+        "prefetch": {
+          "label": "Scarica richiami automaticamente",
+          "helpText": "Scarica un richiamo di esempio alla prima rilevazione di una specie, così la riproduzione è istantanea. Per ogni specie il richiamo viene scaricato una sola volta e conservato."
+        },
+        "transcode": {
+          "label": "Converti in MP3",
+          "helpText": "Converte i richiami salvati in MP3 e li taglia con ffmpeg. Mantiene piccola la cache; se disattivata, la registrazione viene salvata esattamente come pubblicata."
+        },
+        "note": "Ogni richiamo mantiene la sua attribuzione: chi ha effettuato la registrazione e la relativa licenza Creative Commons sono mostrati sul pulsante di riproduzione. Una clip breve per specie occupa alcune centinaia di kilobyte e le clip già salvate si riproducono senza connessione a internet.",
+        "test": {
+          "button": "Test ricerca richiamo di esempio",
+          "loading": "Test in corso...",
+          "enabledRequired": "Abilita prima i richiami di esempio",
+          "inProgress": "Test in corso...",
+          "description": "Verifica che sia possibile trovare un richiamo di esempio per una specie comune"
         }
       }
     },

@@ -949,7 +949,16 @@
         "minutesAfterSunset": "{minutes} min pēc saulrieta",
         "predictionsUnknown": "Citas prognozes",
         "predictionsNone": "Nav citu prognožu",
-        "predictionsCount": "{count, plural, zero {# citu prognožu} one {# cita prognoze} other {# citas prognozes}}"
+        "predictionsCount": "{count, plural, zero {# citu prognožu} one {# cita prognoze} other {# citas prognozes}}",
+        "playCall": "Atskaņot piemēra saucienu",
+        "pauseCall": "Pauzēt piemēra saucienu",
+        "callLoading": "Piemēra sauciena ielāde...",
+        "callUnavailable": "Šai sugai nav pieejams piemēra sauciens",
+        "callError": "Piemēra saucienu nevarēja ielādēt",
+        "callCredit": "Ieraksts: {recordist} - {license} caur Xeno-Canto",
+        "callCreditNoLicense": "Ieraksts: {recordist} caur Xeno-Canto",
+        "callCreditUnknown": "Ieraksts caur Xeno-Canto",
+        "callTrimmed": "Saīsināts no {length} sekundēm"
       },
       "conditions": {
         "title": "Laiks un apstākļi",
@@ -3624,6 +3633,37 @@
           "apiKeyRequired": "API atslēga ir nepieciešama",
           "inProgress": "Pārbaude noris...",
           "description": "Pārbaudīt eBird API savienojamību un autentifikāciju"
+        }
+      },
+      "xenoCanto": {
+        "title": "Xeno-Canto",
+        "description": "Blakus sugas fotogrāfijai atskaņo īsu piemēra saucienu no Xeno-Canto globālā putnu skaņu arhīva.",
+        "enable": "Iespējot piemēra saucienus",
+        "enabledRequired": "Piemēra saucieni nav iespējoti",
+        "apiKey": {
+          "label": "Xeno-Canto API atslēga",
+          "helpText": "Nav obligāta. Ar atslēgu meklēšana izmanto Xeno-Canto API, kas ir uzticamāks nekā publiskās sugas lapas nolasīšana."
+        },
+        "apiKeyInfo": "Xeno-Canto konts ir bezmaksas: reģistrējieties, apstipriniet savu e-pastu un kopējiet savu API atslēgu no savas <a href=\"https://xeno-canto.org/account\" class=\"link link-primary\" target=\"_blank\" rel=\"noopener noreferrer\">konta lapas</a>. Bez atslēgas tiek izmantota publiskā sugas lapa, ko Xeno-Canto dažreiz bloķē automātiskajiem apmeklētājiem.",
+        "maxClipSeconds": {
+          "label": "Maksimālais klipa garums (sekundes)",
+          "helpText": "Garāki ieraksti saglabāšanas laikā tiek saīsināti līdz šim garumam. Īsie klipi lejupielādējas ātri un ir pietiekami putna atpazīšanai."
+        },
+        "prefetch": {
+          "label": "Lejupielādēt piemēra saucienus automātiski",
+          "helpText": "Lejupielādē piemēra saucienu, kad suga tiek noteikta pirmo reizi, lai atskaņošana būtu tūlītēja. Katrai sugai sauciens tiek lejupielādēts vienu reizi un saglabāts."
+        },
+        "transcode": {
+          "label": "Konvertēt uz MP3",
+          "helpText": "Konvertē saglabātos saucienus MP3 formātā un saīsina tos ar ffmpeg. Kešatmiņa paliek maza; ja izslēgts, ieraksts tiek saglabāts tieši tāds, kāds publicēts."
+        },
+        "note": "Katram saucienam saglabājas autorības atzīme: ieraksta autors un viņa Creative Commons licence tiek rādīta uz atskaņošanas pogas. Viens īss klips vienai sugai ir daži simti kilobaitu, un jau saglabātie klipi tiek atskaņoti bez interneta savienojuma.",
+        "test": {
+          "button": "Pārbaudīt piemēra sauciena meklēšanu",
+          "loading": "Pārbauda...",
+          "enabledRequired": "Vispirms iespējojiet piemēra saucienus",
+          "inProgress": "Pārbaude noris...",
+          "description": "Pārbaudīt, vai bieži sastopamai sugai var atrast piemēra saucienu"
         }
       }
     },

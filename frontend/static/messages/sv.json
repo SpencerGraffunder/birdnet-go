@@ -949,7 +949,16 @@
         "minutesAfterSunset": "{minutes} min efter solnedgången",
         "predictionsUnknown": "Andra förutsägelser",
         "predictionsNone": "Inga andra förutsägelser",
-        "predictionsCount": "{count, plural, one {# annan förutsägelse} other {# andra förutsägelser}}"
+        "predictionsCount": "{count, plural, one {# annan förutsägelse} other {# andra förutsägelser}}",
+        "playCall": "Spela upp exempelläte",
+        "pauseCall": "Pausa exempelläte",
+        "callLoading": "Laddar exempelläte...",
+        "callUnavailable": "Inget exempelläte tillgängligt för den här arten",
+        "callError": "Exempellätet kunde inte laddas",
+        "callCredit": "Inspelning av {recordist} - {license} via Xeno-Canto",
+        "callCreditNoLicense": "Inspelning av {recordist} via Xeno-Canto",
+        "callCreditUnknown": "Inspelning via Xeno-Canto",
+        "callTrimmed": "Klippt från {length} sekunder"
       },
       "conditions": {
         "title": "Tid och förhållanden",
@@ -3624,6 +3633,37 @@
           "apiKeyRequired": "API-nyckel krävs",
           "inProgress": "Test pågår...",
           "description": "Testa eBird API-anslutning och autentisering"
+        }
+      },
+      "xenoCanto": {
+        "title": "Xeno-Canto",
+        "description": "Spelar upp ett kort exempelläte bredvid en artbild, hämtat från Xeno-Cantos globala arkiv av fågelläten.",
+        "enable": "Aktivera exempelläten",
+        "enabledRequired": "Exempelläten är inte aktiverade",
+        "apiKey": {
+          "label": "Xeno-Canto API-nyckel",
+          "helpText": "Valfri. Med en nyckel används Xeno-Cantos API vid uppslag, vilket är mer tillförlitligt än att läsa den publika artsidan."
+        },
+        "apiKeyInfo": "Ett Xeno-Canto-konto är gratis: registrera dig, bekräfta din e-postadress och kopiera din API-nyckel från din <a href=\"https://xeno-canto.org/account\" class=\"link link-primary\" target=\"_blank\" rel=\"noopener noreferrer\">kontosida</a>. Utan en nyckel används i stället den publika artsidan, vilket Xeno-Canto ibland blockerar för automatiska besökare.",
+        "maxClipSeconds": {
+          "label": "Maximal klipplängd (sekunder)",
+          "helpText": "Längre inspelningar klipps till denna längd när de lagras. Korta klipp laddas ner snabbt och räcker för att känna igen en fågel."
+        },
+        "prefetch": {
+          "label": "Hämta läten automatiskt",
+          "helpText": "Ladda ner ett exempelläte första gången en art detekteras, så att uppspelningen blir omedelbar. Varje art hämtas en gång och behålls."
+        },
+        "transcode": {
+          "label": "Konvertera till MP3",
+          "helpText": "Konverterar lagrade läten till MP3 och klipper dem med ffmpeg. Håller cachen liten; när avstängt lagras inspelningen exakt som publicerad."
+        },
+        "note": "Varje läte behåller sin kreditering: inspelnaren och dennes Creative Commons-licens visas på uppspelningsknappen. Ett kort klipp per art väger några hundra kilobyte, och redan lagrade klipp spelas upp utan internetuppkoppling.",
+        "test": {
+          "button": "Testa uppslag av exempelläte",
+          "loading": "Testar...",
+          "enabledRequired": "Aktivera exempelläten först",
+          "inProgress": "Test pågår...",
+          "description": "Testa att ett exempelläte kan hittas för en vanlig art"
         }
       }
     },

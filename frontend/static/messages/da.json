@@ -949,7 +949,16 @@
         "minutesAfterSunset": "{minutes} min efter solnedgang",
         "predictionsUnknown": "Andre forudsigelser",
         "predictionsNone": "Ingen andre forudsigelser",
-        "predictionsCount": "{count, plural, one {# anden forudsigelse} other {# andre forudsigelser}}"
+        "predictionsCount": "{count, plural, one {# anden forudsigelse} other {# andre forudsigelser}}",
+        "playCall": "Afspil eksempellyd",
+        "pauseCall": "Pause eksempellyd",
+        "callLoading": "Indlæser eksempellyd...",
+        "callUnavailable": "Ingen eksempellyd tilgængelig for denne art",
+        "callError": "Eksempellyden kunne ikke indlæses",
+        "callCredit": "Optagelse af {recordist} - {license} via Xeno-Canto",
+        "callCreditNoLicense": "Optagelse af {recordist} via Xeno-Canto",
+        "callCreditUnknown": "Optagelse via Xeno-Canto",
+        "callTrimmed": "Beskåret fra {length} sekunder"
       },
       "conditions": {
         "title": "Tid og forhold",
@@ -3624,6 +3633,37 @@
           "apiKeyRequired": "API-nøgle er påkrævet",
           "inProgress": "Test i gang...",
           "description": "Test eBird API-forbindelse og godkendelse"
+        }
+      },
+      "xenoCanto": {
+        "title": "Xeno-Canto",
+        "description": "Afspiller en kort eksempellyd ved siden af et artsfoto, hentet fra Xeno-Cantos globale arkiv over fuglelyde.",
+        "enable": "Aktivér eksempellyde",
+        "enabledRequired": "Eksempellyde er ikke aktiveret",
+        "apiKey": {
+          "label": "Xeno-Canto API-nøgle",
+          "helpText": "Valgfri. Med en nøgle slås op via Xeno-Cantos API, hvilket er mere pålideligt end at læse den offentlige artsside."
+        },
+        "apiKeyInfo": "En Xeno-Canto-konto er gratis: opret en konto, bekræft din e-mail, og kopier din API-nøgle fra <a href=\"https://xeno-canto.org/account\" class=\"link link-primary\" target=\"_blank\" rel=\"noopener noreferrer\">kontosiden</a>. Uden en nøgle bruges den offentlige artsside i stedet, som Xeno-Canto nogle gange blokerer for automatiske besøgende.",
+        "maxClipSeconds": {
+          "label": "Maksimal kliplængde (sekunder)",
+          "helpText": "Længere optagelser beskæres til denne længde, når de gemmes. Korte klip downloades hurtigt og er nok til at bestemme en fugl."
+        },
+        "prefetch": {
+          "label": "Hent eksempellyde automatisk",
+          "helpText": "Downloader en eksempellyd, første gang en art registreres, så afspilningen er øjeblikkelig. Hver art hentes én gang og gemmes."
+        },
+        "transcode": {
+          "label": "Konvertér til MP3",
+          "helpText": "Konvertér gemte eksempellyde til MP3 og beskær dem med ffmpeg. Det holder cachen lille; når funktionen er slået fra, gemmes optagelsen præcis som udgivet."
+        },
+        "note": "Hver lyd bevarer sin kildeangivelse: optagerens navn og vedkommendes Creative Commons-licens vises på afspilningsknappen. Ét kort klip per art fylder nogle hundrede kilobyte, og allerede gemte klip kan afspilles uden internetforbindelse.",
+        "test": {
+          "button": "Test opslag af eksempellyd",
+          "loading": "Tester...",
+          "enabledRequired": "Aktivér eksempellyde først",
+          "inProgress": "Test i gang...",
+          "description": "Test, at der kan findes en eksempellyd for en almindelig art"
         }
       }
     },

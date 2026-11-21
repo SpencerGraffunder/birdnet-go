@@ -949,7 +949,16 @@
         "minutesAfterSunset": "{minutes} Min. nach Sonnenuntergang",
         "predictionsUnknown": "Weitere Vorhersagen",
         "predictionsNone": "Keine weiteren Vorhersagen",
-        "predictionsCount": "{count, plural, one {# weitere Vorhersage} other {# weitere Vorhersagen}}"
+        "predictionsCount": "{count, plural, one {# weitere Vorhersage} other {# weitere Vorhersagen}}",
+        "playCall": "Beispiellaut abspielen",
+        "pauseCall": "Beispiellaut pausieren",
+        "callLoading": "Beispiellaut wird geladen...",
+        "callUnavailable": "Für diese Art ist kein Beispiellaut verfügbar",
+        "callError": "Beispiellaut konnte nicht geladen werden",
+        "callCredit": "Aufnahme von {recordist} - {license} via Xeno-Canto",
+        "callCreditNoLicense": "Aufnahme von {recordist} via Xeno-Canto",
+        "callCreditUnknown": "Aufnahme via Xeno-Canto",
+        "callTrimmed": "Gekürzt aus {length} Sekunden"
       },
       "conditions": {
         "title": "Zeit & Bedingungen",
@@ -3624,6 +3633,37 @@
           "apiKeyRequired": "API-Schlüssel ist erforderlich",
           "inProgress": "Test läuft...",
           "description": "eBird-API-Konnektivität und Authentifizierung testen"
+        }
+      },
+      "xenoCanto": {
+        "title": "Xeno-Canto",
+        "description": "Spielt neben einem Artsfoto einen kurzen Beispiellaut aus dem globalen Xeno-Canto-Archiv für Vogellaute ab.",
+        "enable": "Beispiellaute aktivieren",
+        "enabledRequired": "Beispiellaute sind nicht aktiviert",
+        "apiKey": {
+          "label": "Xeno-Canto-API-Schlüssel",
+          "helpText": "Optional. Mit einem Schlüssel erfolgt die Suche über die API von Xeno-Canto, was zuverlässiger ist als das Auslesen der öffentlichen Artsseite."
+        },
+        "apiKeyInfo": "Ein Xeno-Canto-Konto ist kostenlos: Registrieren Sie sich, bestätigen Sie Ihre E-Mail-Adresse und kopieren Sie Ihren API-Schlüssel von Ihrer <a href=\"https://xeno-canto.org/account\" class=\"link link-primary\" target=\"_blank\" rel=\"noopener noreferrer\">Kontoseite</a>. Ohne Schlüssel wird stattdessen die öffentliche Artsseite verwendet, die Xeno-Canto für automatisierte Besucher manchmal sperrt.",
+        "maxClipSeconds": {
+          "label": "Maximale Clip-Länge (Sekunden)",
+          "helpText": "Längere Aufnahmen werden beim Speichern auf diese Länge zugeschnitten. Kurze Clips werden schnell heruntergeladen und reichen zur Bestimmung eines Vogels aus."
+        },
+        "prefetch": {
+          "label": "Beispiellaute automatisch abrufen",
+          "helpText": "Lädt beim ersten Auftreten einer Art einen Beispiellaut herunter, damit die Wiedergabe sofort startet. Jeder Art wird einmalig abgerufen und gespeichert."
+        },
+        "transcode": {
+          "label": "In MP3 konvertieren",
+          "helpText": "Wandelt gespeicherte Beispiellaute in MP3 um und schneidet sie mit ffmpeg zu. Das hält den Cache klein; wenn deaktiviert, wird die Aufnahme genau wie veröffentlicht gespeichert."
+        },
+        "note": "Jeder Laut behält seine Quellenangabe: Aufnahmeersteller und dessen Creative-Commons-Lizenz werden auf dem Wiedergabeknopf angezeigt. Ein kurzer Clip pro Art umfasst einige hundert Kilobyte, und bereits gespeicherte Clips werden ohne Internetverbindung abgespielt.",
+        "test": {
+          "button": "Suche nach Beispiellaut testen",
+          "loading": "Wird getestet...",
+          "enabledRequired": "Aktivieren Sie zuerst die Beispiellaute",
+          "inProgress": "Test läuft...",
+          "description": "Testen, ob für eine häufige Art ein Beispiellaut gefunden wird"
         }
       }
     },

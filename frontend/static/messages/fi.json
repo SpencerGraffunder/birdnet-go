@@ -949,7 +949,16 @@
         "minutesAfterSunset": "{minutes} min auringonlaskun jälkeen",
         "predictionsUnknown": "Muut ennusteet",
         "predictionsNone": "Ei muita ennusteita",
-        "predictionsCount": "{count, plural, one {# muu ennuste} other {# muuta ennustetta}}"
+        "predictionsCount": "{count, plural, one {# muu ennuste} other {# muuta ennustetta}}",
+        "playCall": "Toista esimerkkiääni",
+        "pauseCall": "Pysäytä esimerkkiääni",
+        "callLoading": "Ladataan esimerkkiääntä...",
+        "callUnavailable": "Tälle lajille ei ole esimerkkiääntä",
+        "callError": "Esimerkkiäänen lataus epäonnistui",
+        "callCredit": "Äänitys: {recordist} - {license} Xeno-Cannon kautta",
+        "callCreditNoLicense": "Äänitys: {recordist} Xeno-Cannon kautta",
+        "callCreditUnknown": "Äänitys Xeno-Cannon kautta",
+        "callTrimmed": "Leikattu {length} sekunnista"
       },
       "conditions": {
         "title": "Aika ja olosuhteet",
@@ -3624,6 +3633,37 @@
           "apiKeyRequired": "API-avain vaaditaan",
           "inProgress": "Testi käynnissä...",
           "description": "Testaa eBird API:n yhteyttä ja tunnistautumista"
+        }
+      },
+      "xenoCanto": {
+        "title": "Xeno-Canto",
+        "description": "Toistaa lyhyen esimerkkiäänen lajikuvan vieressä; ääni on peräisin Xeno-Cannon globaalista lintuääniarkistosta.",
+        "enable": "Ota esimerkkiäänet käyttöön",
+        "enabledRequired": "Esimerkkiäänet eivät ole käytössä",
+        "apiKey": {
+          "label": "Xeno-Canto API-avain",
+          "helpText": "Valinnainen. Avaimen kanssa haku käyttää Xeno-Canton APIa, joka on luotettavampi kuin julkisen lajisivun lukeminen."
+        },
+        "apiKeyInfo": "Xeno-Canto-tili on ilmainen: rekisteröidy, vahvista sähköpostiosoitteesi ja kopioi API-avaimesi <a href=\"https://xeno-canto.org/account\" class=\"link link-primary\" target=\"_blank\" rel=\"noopener noreferrer\"></a>. Ilman avainta käytetään julkista lajisivua, johon Xeno-Canto voi ajoittain estää pääsyn automaattisilta vierailijoilta.",
+        "maxClipSeconds": {
+          "label": "Leikkeen enimmäispituus (sekuntia)",
+          "helpText": "Pidemmät äänitykset leikataan tämän pituisiksi tallennettaessa. Lyhyet pätkät latautuvat nopeasti ja riittävät linnun tunnistamiseen."
+        },
+        "prefetch": {
+          "label": "Nouda äänet automaattisesti",
+          "helpText": "Lataa esimerkkiäänen, kun laji havaitaan ensimmäisen kerran, joten toisto on välitöntä. Jokainen laji noudetaan kerran ja säilytetään."
+        },
+        "transcode": {
+          "label": "Muunna MP3-muotoon",
+          "helpText": "Muuntaa tallennetut äänet MP3-muotoon ja leikkaa ne ffmpegillä. Pitää välimuistin pienenä; kun tämä on pois päältä, äänitys tallennetaan täsmälleen sellaisena kuin se on julkaistu."
+        },
+        "note": "Jokainen ääni säilyttää tekijätietonsa: äänittäjä ja tämän Creative Commons -lisenssi näkyvät toistopainikkeessa. Yksi lyhyt pätkä lajia kohden on muutaman sadan kilotavun kokoinen, ja tallennetut pätkät toistuvat ilman internetyhteyttä.",
+        "test": {
+          "button": "Testaa esimerkkiäänen haku",
+          "loading": "Testataan...",
+          "enabledRequired": "Ota ensin esimerkkiäänet käyttöön",
+          "inProgress": "Testi käynnissä...",
+          "description": "Testaa, että esimerkkiääni löytyy yleiseltä lajilta"
         }
       }
     },

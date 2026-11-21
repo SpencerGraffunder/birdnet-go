@@ -949,7 +949,16 @@
         "minutesAfterSunset": "{minutes} min na zonsondergang",
         "predictionsUnknown": "Overige voorspellingen",
         "predictionsNone": "Geen andere voorspellingen",
-        "predictionsCount": "{count, plural, one {# andere voorspelling} other {# andere voorspellingen}}"
+        "predictionsCount": "{count, plural, one {# andere voorspelling} other {# andere voorspellingen}}",
+        "playCall": "Voorbeeldroep afspelen",
+        "pauseCall": "Voorbeeldroep pauzeren",
+        "callLoading": "Voorbeeldroep laden...",
+        "callUnavailable": "Geen voorbeeldroep beschikbaar voor deze soort",
+        "callError": "Voorbeeldroep kon niet worden geladen",
+        "callCredit": "Opname door {recordist} - {license} via Xeno-Canto",
+        "callCreditNoLicense": "Opname door {recordist} via Xeno-Canto",
+        "callCreditUnknown": "Opname via Xeno-Canto",
+        "callTrimmed": "Ingekort vanaf {length} seconden"
       },
       "conditions": {
         "title": "Tijd en omstandigheden",
@@ -3624,6 +3633,37 @@
           "apiKeyRequired": "API-sleutel is vereist",
           "inProgress": "Test wordt uitgevoerd...",
           "description": "Test eBird API-connectiviteit en authenticatie"
+        }
+      },
+      "xenoCanto": {
+        "title": "Xeno-Canto",
+        "description": "Speelt een korte voorbeeldroep af naast een foto van de soort, afkomstig uit het wereldwijde archief met vogelgeluiden van Xeno-Canto.",
+        "enable": "Voorbeeldroepen inschakelen",
+        "enabledRequired": "Voorbeeldroepen zijn niet ingeschakeld",
+        "apiKey": {
+          "label": "Xeno-Canto API-sleutel",
+          "helpText": "Optioneel. Met een sleutel gaat opzoeken via de API van Xeno-Canto, wat betrouwbaarder is dan het uitlezen van de openbare soortpagina."
+        },
+        "apiKeyInfo": "Een Xeno-Canto-account is gratis: registreer, bevestig je e-mailadres en kopieer je API-sleutel van je <a href=\"https://xeno-canto.org/account\" class=\"link link-primary\" target=\"_blank\" rel=\"noopener noreferrer\">accountpagina</a>. Zonder sleutel wordt de openbare soortpagina gebruikt, die Xeno-Canto soms blokkeert voor geautomatiseerde bezoekers.",
+        "maxClipSeconds": {
+          "label": "Maximale clipduur (seconden)",
+          "helpText": "Langere opnames worden bij het opslaan ingekort tot deze duur. Korte clips zijn snel gedownload en voldoende om een vogel te herkennen."
+        },
+        "prefetch": {
+          "label": "Voorbeeldroepen automatisch ophalen",
+          "helpText": "Download een voorbeeldroep wanneer een soort voor het eerst wordt gedetecteerd, zodat het afspelen direct begint. Elke soort wordt één keer opgehaald en bewaard."
+        },
+        "transcode": {
+          "label": "Converteren naar MP3",
+          "helpText": "Zet opgeslagen voorbeeldroepen om naar MP3 en kort ze in met ffmpeg. Houdt de cache klein; als dit is uitgeschakeld, wordt de opname precies zoals gepubliceerd opgeslagen."
+        },
+        "note": "Elke voorbeeldroep behoudt de bronvermelding: de opnemer en hun Creative Commons-licentie worden op de speelknop getoond. Eén korte clip per soort is een paar honderd kilobyte, en opgeslagen clips zijn af te spelen zonder internetverbinding.",
+        "test": {
+          "button": "Opzoeken van voorbeeldroep testen",
+          "loading": "Testen...",
+          "enabledRequired": "Schakel eerst voorbeeldroepen in",
+          "inProgress": "Test wordt uitgevoerd...",
+          "description": "Test of een voorbeeldroep voor een veelvoorkomende soort gevonden kan worden"
         }
       }
     },

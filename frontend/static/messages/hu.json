@@ -949,7 +949,16 @@
         "minutesAfterSunset": "{minutes} perc napnyugta után",
         "predictionsUnknown": "Egyéb előrejelzések",
         "predictionsNone": "Nincs más előrejelzés",
-        "predictionsCount": "{count, plural, one {# egyéb előrejelzés} other {# egyéb előrejelzés}}"
+        "predictionsCount": "{count, plural, one {# egyéb előrejelzés} other {# egyéb előrejelzés}}",
+        "playCall": "Példahívás lejátszása",
+        "pauseCall": "Példahívás szüneteltetése",
+        "callLoading": "Példahívás betöltése...",
+        "callUnavailable": "Ehhez a fajhoz nem érhető el példahívás",
+        "callError": "A példahívást nem sikerült betölteni",
+        "callCredit": "Hangfelvétel: {recordist} - {license}, forrás: Xeno-Canto",
+        "callCreditNoLicense": "Hangfelvétel: {recordist}, forrás: Xeno-Canto",
+        "callCreditUnknown": "Hangfelvétel forrása: Xeno-Canto",
+        "callTrimmed": "{length} másodpercből levágva"
       },
       "conditions": {
         "title": "Időpont és körülmények",
@@ -3624,6 +3633,37 @@
           "apiKeyRequired": "Az API kulcs szükséges",
           "inProgress": "Teszt folyamatban...",
           "description": "eBird API kapcsolat és hitelesítés tesztelése"
+        }
+      },
+      "xenoCanto": {
+        "title": "Xeno-Canto",
+        "description": "A faj fényképe mellett egy rövid példahívást játszik le a madárhangok globális Xeno-Canto archívumából.",
+        "enable": "Példahívások engedélyezése",
+        "enabledRequired": "A példahívások nincsenek engedélyezve",
+        "apiKey": {
+          "label": "Xeno-Canto API kulcs",
+          "helpText": "Opcionális. Kulcs esetén a keresések a Xeno-Canto API-t használják, amely megbízhatóbb, mint a nyilvános fajoldal beolvasása."
+        },
+        "apiKeyInfo": "A Xeno-Canto-fiók ingyenes: regisztráljon, erősítse meg az e-mail címét, és másolja ki az API kulcsot a <a href=\"https://xeno-canto.org/account\" class=\"link link-primary\" target=\"_blank\" rel=\"noopener noreferrer\">fiókoldaláról</a>. Kulcs hiányában a rendszer a nyilvános fajoldalt használja, amelyet a Xeno-Canto néha blokkol az automatikus látogatók elől.",
+        "maxClipSeconds": {
+          "label": "Klipek maximális hossza (másodperc)",
+          "helpText": "A hosszabb felvételek mentéskor erre a hosszúságra vannak vágva. A rövid klipek gyorsan letölthetők, és elegek egy madár felismeréséhez."
+        },
+        "prefetch": {
+          "label": "Példahívások automatikus letöltése",
+          "helpText": "Letölt egy példahívást egy faj első észlelésekor, hogy a lejátszás azonnali legyen. Minden faj esetén a példahívást egyszer tölti le és őrzi meg."
+        },
+        "transcode": {
+          "label": "Konvertálás MP3 formátumba",
+          "helpText": "A mentett példahívásokat MP3 formátumba konvertálja és ffmpeg-vel vágja. Kicsiben tartja a gyorsítótárat; kikapcsolt állapotban a felvétel pontosan a közzétett alakban kerül mentésre."
+        },
+        "note": "Minden példahívás megtartja a forrásmegjelölést: a felvételt készítő személy és a Creative Commons engedély a lejátszás gombon jelenik meg. Fajonként egy rövid klip néhány száz kilobájtot foglal, és a már mentett klipek internetkapcsolat nélkül is lejátszhatók.",
+        "test": {
+          "button": "Példahívás-keresés tesztelése",
+          "loading": "Tesztelés...",
+          "enabledRequired": "Először engedélyezze a példahívásokat",
+          "inProgress": "Teszt folyamatban...",
+          "description": "Annak tesztelése, hogy egy gyakori fajhoz található-e példahívás"
         }
       }
     },

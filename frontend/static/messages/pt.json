@@ -949,7 +949,16 @@
         "minutesAfterSunset": "{minutes} min após o pôr do sol",
         "predictionsUnknown": "Outras previsões",
         "predictionsNone": "Sem outras previsões",
-        "predictionsCount": "{count, plural, one {# outra previsão} other {# outras previsões}}"
+        "predictionsCount": "{count, plural, one {# outra previsão} other {# outras previsões}}",
+        "playCall": "Reproduzir chamada de exemplo",
+        "pauseCall": "Pausar chamada de exemplo",
+        "callLoading": "Carregando chamada de exemplo...",
+        "callUnavailable": "Nenhuma chamada de exemplo disponível para esta espécie",
+        "callError": "Não foi possível carregar a chamada de exemplo",
+        "callCredit": "Gravação de {recordist} - {license} via Xeno-Canto",
+        "callCreditNoLicense": "Gravação de {recordist} via Xeno-Canto",
+        "callCreditUnknown": "Gravação via Xeno-Canto",
+        "callTrimmed": "Cortada de {length} segundos"
       },
       "conditions": {
         "title": "Hora e condições",
@@ -3624,6 +3633,37 @@
           "apiKeyRequired": "Chave API é obrigatória",
           "inProgress": "Teste em curso...",
           "description": "Testar conectividade e autenticação da API eBird"
+        }
+      },
+      "xenoCanto": {
+        "title": "Xeno-Canto",
+        "description": "Toca uma chamada de exemplo curta ao lado da foto da espécie, obtida do arquivo global de sons de aves do Xeno-Canto.",
+        "enable": "Ativar chamadas de exemplo",
+        "enabledRequired": "As chamadas de exemplo não estão ativadas",
+        "apiKey": {
+          "label": "Chave API do Xeno-Canto",
+          "helpText": "Opcional. Com uma chave, as buscas usam a API do Xeno-Canto, que é mais confiável do que ler a página pública de espécies."
+        },
+        "apiKeyInfo": "Uma conta no Xeno-Canto é gratuita: cadastre-se, confirme o seu e-mail e copie a sua chave API na sua <a href=\"https://xeno-canto.org/account\" class=\"link link-primary\" target=\"_blank\" rel=\"noopener noreferrer\">página da conta</a>. Sem uma chave, a página pública de espécies é usada no lugar, que o Xeno-Canto às vezes bloqueia para visitantes automatizados.",
+        "maxClipSeconds": {
+          "label": "Duração máxima do trecho (segundos)",
+          "helpText": "Gravações mais longas são cortadas para esta duração quando armazenadas. Trechos curtos baixam rapidamente e são suficientes para reconhecer uma ave."
+        },
+        "prefetch": {
+          "label": "Buscar chamadas automaticamente",
+          "helpText": "Baixa uma chamada de exemplo na primeira vez que uma espécie é detectada, para que a reprodução seja instantânea. Cada espécie é baixada uma vez e mantida."
+        },
+        "transcode": {
+          "label": "Converter para MP3",
+          "helpText": "Converte as chamadas armazenadas para MP3 e as corta com ffmpeg. Mantém o cache pequeno; quando desativado, a gravação é armazenada exatamente como publicada."
+        },
+        "note": "Cada chamada mantém a sua atribuição: o autor da gravação e a sua licença Creative Commons são exibidos no botão de reprodução. Um trecho curto por espécie ocupa algumas centenas de kilobytes, e os trechos já armazenados são reproduzidos sem conexão com a internet.",
+        "test": {
+          "button": "Testar busca de chamada de exemplo",
+          "loading": "A testar...",
+          "enabledRequired": "Ative primeiro as chamadas de exemplo",
+          "inProgress": "Teste em curso...",
+          "description": "Testar se uma chamada de exemplo pode ser encontrada para uma espécie comum"
         }
       }
     },

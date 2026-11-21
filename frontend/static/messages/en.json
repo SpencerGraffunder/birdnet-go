@@ -949,7 +949,16 @@
         "minutesAfterSunset": "{minutes} min after sunset",
         "predictionsUnknown": "Other predictions",
         "predictionsNone": "No other predictions",
-        "predictionsCount": "{count, plural, one {# other prediction} other {# other predictions}}"
+        "predictionsCount": "{count, plural, one {# other prediction} other {# other predictions}}",
+        "playCall": "Play example call",
+        "pauseCall": "Pause example call",
+        "callLoading": "Loading example call...",
+        "callUnavailable": "No example call available for this species",
+        "callError": "Example call could not be loaded",
+        "callCredit": "Recording by {recordist} - {license} via Xeno-Canto",
+        "callCreditNoLicense": "Recording by {recordist} via Xeno-Canto",
+        "callCreditUnknown": "Recording via Xeno-Canto",
+        "callTrimmed": "Trimmed from {length} seconds"
       },
       "conditions": {
         "title": "Time & conditions",
@@ -3624,6 +3633,37 @@
           "apiKeyRequired": "API key is required",
           "inProgress": "Test in progress...",
           "description": "Test eBird API connectivity and authentication"
+        }
+      },
+      "xenoCanto": {
+        "title": "Xeno-Canto",
+        "description": "Plays a short example call next to a species photo, taken from the Xeno-Canto global archive of bird sounds.",
+        "enable": "Enable Example Calls",
+        "enabledRequired": "Example calls are not enabled",
+        "apiKey": {
+          "label": "Xeno-Canto API Key",
+          "helpText": "Optional. With a key, lookups use Xeno-Canto's API, which is more reliable than reading the public species page."
+        },
+        "apiKeyInfo": "A Xeno-Canto account is free: register, confirm your email, and copy your API key from your <a href=\"https://xeno-canto.org/account\" class=\"link link-primary\" target=\"_blank\" rel=\"noopener noreferrer\">account page</a>. Without a key the public species page is used instead, which Xeno-Canto sometimes blocks for automated visitors.",
+        "maxClipSeconds": {
+          "label": "Maximum Clip Length (seconds)",
+          "helpText": "Longer recordings are trimmed to this length when they are stored. Short clips download quickly and are enough to recognise a bird."
+        },
+        "prefetch": {
+          "label": "Fetch Calls Automatically",
+          "helpText": "Download an example call the first time a species is detected, so playback is instant. Each species is fetched once and kept."
+        },
+        "transcode": {
+          "label": "Convert To MP3",
+          "helpText": "Convert stored calls to MP3 and trim them with ffmpeg. Keeps the cache small; when off, the recording is stored exactly as published."
+        },
+        "note": "Every call keeps its attribution: the recordist and their Creative Commons licence are shown on the play button. One short clip per species is a few hundred kilobytes, and clips already stored play with no internet connection.",
+        "test": {
+          "button": "Test Example Call Lookup",
+          "loading": "Testing...",
+          "enabledRequired": "Enable example calls first",
+          "inProgress": "Test in progress...",
+          "description": "Test that an example call can be found for a common species"
         }
       }
     },

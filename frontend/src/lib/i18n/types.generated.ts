@@ -760,6 +760,15 @@ export type TranslationKey =
   | 'detections.detail.identity.predictionsUnknown'
   | 'detections.detail.identity.predictionsNone'
   | 'detections.detail.identity.predictionsCount' // params: count
+  | 'detections.detail.identity.playCall'
+  | 'detections.detail.identity.pauseCall'
+  | 'detections.detail.identity.callLoading'
+  | 'detections.detail.identity.callUnavailable'
+  | 'detections.detail.identity.callError'
+  | 'detections.detail.identity.callCredit' // params: recordist, license
+  | 'detections.detail.identity.callCreditNoLicense' // params: recordist
+  | 'detections.detail.identity.callCreditUnknown'
+  | 'detections.detail.identity.callTrimmed' // params: length
   | 'detections.detail.conditions.title'
   | 'detections.detail.conditions.skyLabel' // params: time, sunrise, sunset
   | 'detections.detail.conditions.activityLabel' // params: species
@@ -2653,6 +2662,25 @@ export type TranslationKey =
   | 'settings.integration.ebird.test.apiKeyRequired'
   | 'settings.integration.ebird.test.inProgress'
   | 'settings.integration.ebird.test.description'
+  | 'settings.integration.xenoCanto.title'
+  | 'settings.integration.xenoCanto.description'
+  | 'settings.integration.xenoCanto.enable'
+  | 'settings.integration.xenoCanto.enabledRequired'
+  | 'settings.integration.xenoCanto.apiKey.label'
+  | 'settings.integration.xenoCanto.apiKey.helpText'
+  | 'settings.integration.xenoCanto.apiKeyInfo'
+  | 'settings.integration.xenoCanto.maxClipSeconds.label'
+  | 'settings.integration.xenoCanto.maxClipSeconds.helpText'
+  | 'settings.integration.xenoCanto.prefetch.label'
+  | 'settings.integration.xenoCanto.prefetch.helpText'
+  | 'settings.integration.xenoCanto.transcode.label'
+  | 'settings.integration.xenoCanto.transcode.helpText'
+  | 'settings.integration.xenoCanto.note'
+  | 'settings.integration.xenoCanto.test.button'
+  | 'settings.integration.xenoCanto.test.loading'
+  | 'settings.integration.xenoCanto.test.enabledRequired'
+  | 'settings.integration.xenoCanto.test.inProgress'
+  | 'settings.integration.xenoCanto.test.description'
   | 'settings.audio.loading'
   | 'settings.audio.tabs.soundCard'
   | 'settings.audio.tabs.streams'
@@ -4879,6 +4907,9 @@ export type TranslationParams = {
   'detections.detail.identity.minutesBeforeSunset': { minutes: string | number };
   'detections.detail.identity.minutesAfterSunset': { minutes: string | number };
   'detections.detail.identity.predictionsCount': { count: string | number };
+  'detections.detail.identity.callCredit': { recordist: string | number; license: string | number };
+  'detections.detail.identity.callCreditNoLicense': { recordist: string | number };
+  'detections.detail.identity.callTrimmed': { length: string | number };
   'detections.detail.conditions.skyLabel': {
     time: string | number;
     sunrise: string | number;
