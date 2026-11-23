@@ -40,6 +40,13 @@ const (
 // in settings, so no clip will ever become available.
 var ErrSpeciesSoundNotAvailable = errors.NewStd("species example call service not available")
 
+// errSpeciesSoundNameRejected reports that speciesSoundNameParam has already
+// answered the client with 400. It is never shown: Core.HandleError writes the
+// response and returns nil, so a helper that only passed that value back would
+// leave its caller checking err != nil against nil, carrying on with an empty
+// species name and writing a second response on a committed connection.
+var errSpeciesSoundNameRejected = errors.NewStd("species name rejected")
+
 // SpeciesSoundInfo is the metadata answer for GET .../species-sound/:name/info.
 type SpeciesSoundInfo struct {
 	// State is "ready", "pending" or "not-found" — the client branches on this
@@ -105,7 +112,7 @@ func (c *Handler) GetSpeciesSoundInfo(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, SpeciesSoundInfo{
 		State:           string(state),
 		ScientificName:  scientificName,
-		AudioURL:        "/api/v2/media/species-sound/" + url.PathEscape(name),
+		AudioURL:        speciesSoundAudioURL(name),
 		MimeType:        entry.Info.MimeType,
 		DurationSeconds: entry.Info.DurationSeconds,
 		Recordist:       entry.Info.Recordist,
@@ -189,26 +196,51 @@ func (c *Handler) RegisterSpeciesSoundRoutes(g *echo.Group) {
 	g.GET("/media/species-sound/:scientific_name", c.ServeSpeciesSound)
 }
 
+// speciesSoundAudioURL builds the audioURL published for a resolved entry from
+// its cache slug. It exists as a function so the test suite can feed the exact
+// URL back through speciesSoundNameParam: the two halves must agree, or the
+// player is handed a link that this same handler answers with 400.
+func speciesSoundAudioURL(slug string) string {
+	return "/api/v2/media/species-sound/" + url.PathEscape(slug)
+}
+
+// rejectSpeciesSoundName answers a rejected species name with 400 and returns a
+// non-nil error for the caller. Core.HandleError has already written the
+// response by then and returns nil, so its return value cannot serve as the
+// caller's stop signal — see errSpeciesSoundNameRejected.
+func (c *Handler) rejectSpeciesSoundName(ctx echo.Context, reason error, message string) error {
+	_ = c.HandleError(ctx, reason, message, http.StatusBadRequest)
+	return errSpeciesSoundNameRejected
+}
+
 // speciesSoundNameParam reads and validates the :scientific_name parameter.
 func (c *Handler) speciesSoundNameParam(ctx echo.Context) (string, error) {
 	raw := ctx.Param("scientific_name")
 	decoded, err := url.PathUnescape(raw)
 	if err != nil {
-		return "", c.HandleError(ctx, fmt.Errorf("invalid species name encoding"), "Invalid species name", http.StatusBadRequest)
+		return "", c.rejectSpeciesSoundName(ctx, fmt.Errorf("invalid species name encoding"), "Invalid species name")
 	}
 	decoded = strings.TrimSpace(decoded)
 	if decoded == "" {
-		return "", c.HandleError(ctx, fmt.Errorf("missing scientific name"), "Scientific name is required", http.StatusBadRequest)
+		return "", c.rejectSpeciesSoundName(ctx, fmt.Errorf("missing scientific name"), "Scientific name is required")
 	}
 	// Defence in depth: the cache turns names into file names through its own
 	// slug rules, but a traversal attempt should be reported, not slugged.
 	//nolint:gocritic // ruleguard suggests filepath.IsLocal, which still accepts nested local
 	// names ("a/b"); a species name must contain no separator at all.
 	if strings.Contains(decoded, "/") || strings.Contains(decoded, "\\") || strings.Contains(decoded, "..") {
-		return "", c.HandleError(ctx, fmt.Errorf("invalid species name"), "Invalid species name", http.StatusBadRequest)
+		return "", c.rejectSpeciesSoundName(ctx, fmt.Errorf("invalid species name"), "Invalid species name")
+	}
+	// Two spellings reach this route legitimately: the scientific name, which is
+	// what the detail panel has and what a hand-written link carries, and the
+	// cache slug, which is what GetSpeciesSoundInfo publishes as audioURL — so
+	// rejecting the slug here breaks playback with a 400 on a URL the API just
+	// handed the browser.
+	if name, ok := speciesaudio.NameFromSlug(decoded); ok {
+		return name, nil
 	}
 	if _, err := speciesaudio.Slug(decoded); err != nil {
-		return "", c.HandleError(ctx, err, "Invalid species name", http.StatusBadRequest)
+		return "", c.rejectSpeciesSoundName(ctx, err, "Invalid species name")
 	}
 	return decoded, nil
 }
