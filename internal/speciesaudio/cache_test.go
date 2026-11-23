@@ -462,3 +462,62 @@ func TestCacheDownloadsThroughGuardedClient(t *testing.T) {
 	assert.Equal(t, "audio/mpeg", entry.Info.MimeType)
 	assert.Equal(t, filepath.Join(c.Dir(), "corvus_brachyrhynchos.mp3"), entry.Path)
 }
+
+// TestUpdateDoesNotDeadlockTheCacheMutex guards the wedge that took the live
+// example-call endpoints down: Update held c.mu.Lock() and rebuilt the provider
+// chain through accessors that took c.mu.RLock(). An RWMutex blocks that RLock
+// from the same goroutine forever, so the first settings hot-reload wedged the
+// cache permanently and every request resolving the cache directory hung with
+// it — while requests that answered before touching the cache (invalid names)
+// still returned, which is what made it look like a routing problem.
+func TestUpdateDoesNotDeadlockTheCacheMutex(t *testing.T) {
+	t.Parallel()
+
+	opts := &Options{Enabled: true, Transcode: true, UserAgent: testUserAgent}
+	c, _, _ := newStubCache(t, opts, func(string) ([]Sound, error) { return nil, ErrSoundNotFound })
+	dataDir := opts.DataDir
+
+	updateDone := make(chan struct{})
+	go func() {
+		defer close(updateDone)
+		c.Update(Options{Enabled: true, DataDir: dataDir, Transcode: true, UserAgent: testUserAgent, APIKey: "abc123"})
+	}()
+
+	// A concurrent reader is exactly what the HTTP handlers do. Which of the
+	// two wins the lock is a scheduling detail, so the assertion is only that
+	// both of them finish: a self-deadlock inside Update stops both forever.
+	dirCh := make(chan string, 1)
+	go func() { dirCh <- c.Dir() }()
+
+	joined := make(chan string, 1)
+	go func() {
+		<-updateDone
+		joined <- <-dirCh
+	}()
+
+	select {
+	case got := <-joined:
+		assert.Equal(t, filepath.Join(dataDir, "cache", cacheDirName), got)
+	case <-time.After(5 * time.Second):
+		t.Fatal("Update and a concurrent Dir() did not both complete within 5s: c.mu is wedged")
+	}
+
+	require.Equal(t, "abc123", c.options().APIKey, "the new settings must be visible after Update")
+}
+
+// TestUpdateRebuildsProvidersFromTheNewOptions keeps the hot-reload contract:
+// adding a key switches the chain to the API tier, and no provider is rebuilt
+// from stale options.
+func TestUpdateRebuildsProvidersFromTheNewOptions(t *testing.T) {
+	t.Parallel()
+
+	opts := &Options{Enabled: true, UserAgent: testUserAgent}
+	c, _, _ := newStubCache(t, opts, func(string) ([]Sound, error) { return nil, ErrSoundNotFound })
+	dataDir := opts.DataDir
+
+	require.Len(t, c.providerChain(), 1, "keyless cache uses the page tier only")
+
+	c.Update(Options{Enabled: true, DataDir: dataDir, UserAgent: testUserAgent, APIKey: "abc123"})
+	require.Len(t, c.providerChain(), 2, "a configured key must add the API tier")
+	assert.Equal(t, "api", c.providerChain()[0].Name())
+}

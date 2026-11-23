@@ -144,7 +144,7 @@ func NewCache(o Options) *Cache { //nolint:gocritic // hugeParam: a config snaps
 		queued:   map[string]struct{}{},
 	}
 	c.download = newHTTPDownloader(c.client, c.userAgent())
-	c.buildProviders()
+	c.buildProviders(o.APIKey, c.userAgent())
 	return c
 }
 
@@ -154,15 +154,27 @@ func NewCache(o Options) *Cache { //nolint:gocritic // hugeParam: a config snaps
 func (c *Cache) Update(o Options) { //nolint:gocritic // hugeParam: matches NewCache; Options is copied in on purpose
 	c.mu.Lock()
 	c.opt = o
-	c.buildProviders()
+	c.buildProviders(o.APIKey, resolveUserAgent(o))
 	c.mu.Unlock()
 }
 
-// buildProviders rebuilds the provider chain from the current options. The
-// caller holds c.mu.
-func (c *Cache) buildProviders() {
-	c.api = NewAPIProvider(c.opt.APIKey, c.userAgent())
-	c.page = NewPageProvider(c.userAgent())
+// buildProviders rebuilds the provider chain from the values given. It takes
+// plain values on purpose: Update calls it while holding c.mu, and reading
+// anything back through c.options()/c.userAgent() would take c.mu.RLock() from
+// the goroutine that already holds the write lock — a self-deadlock that wedges
+// every Dir()/options() reader behind it, which is how the live endpoints came
+// to hang on the first settings hot-reload.
+func (c *Cache) buildProviders(apiKey, userAgent string) {
+	c.api = NewAPIProvider(apiKey, userAgent)
+	c.page = NewPageProvider(userAgent)
+}
+
+// resolveUserAgent is userAgent for a detached options snapshot.
+func resolveUserAgent(o Options) string { //nolint:gocritic // hugeParam: reads the snapshot Update was given
+	if o.UserAgent == "" {
+		return defaultUserAgent()
+	}
+	return o.UserAgent
 }
 
 // Close stops the prefetch worker and waits for it to return, so a store that
@@ -186,13 +198,7 @@ func (c *Cache) Close() error {
 }
 
 func (c *Cache) userAgent() string {
-	c.mu.RLock()
-	ua := c.opt.UserAgent
-	c.mu.RUnlock()
-	if ua != "" {
-		return ua
-	}
-	return defaultUserAgent()
+	return resolveUserAgent(c.options())
 }
 
 // options is a snapshot accessor for paths and limits.
