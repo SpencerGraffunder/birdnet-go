@@ -182,17 +182,27 @@ type apiResponse struct {
 	Error         string     `json:"error"`
 }
 
-// apiSound is one API recording. Field names follow Xeno-Canto's published
-// API documentation; every field is optional and numeric fields arrive as
-// strings on some endpoints, hence flexValue.
+// apiSound is one API recording. The field names are API 3's, verified against
+// a live response rather than the docs, which still describe the older spelling:
+// length is "length" ("m:ss") and quality is "q" (a letter) where API 2 used
+// "len" and a numeric "r" — both old names are kept as fallbacks. Note that
+// "cnt" is the COUNTRY and "en" is the English name: reading cnt as the species
+// name labels every clip with its recording country.
+//
+// Every field is optional and numeric ones arrive as strings on some endpoints,
+// hence flexValue.
 type apiSound struct {
 	ID        flexValue `json:"id"`
 	Genus     string    `json:"gen"`
 	Species   string    `json:"sp"`
-	Common    string    `json:"cnt"`
-	Length    flexValue `json:"len"`
+	Common    string    `json:"en"`
+	Country   string    `json:"cnt"`
+	Length    flexValue `json:"length"`
+	LegLength flexValue `json:"len"`
+	Quality   flexValue `json:"q"`
+	LegRating flexValue `json:"r"`
+	License   string    `json:"lic"`
 	Recordist string    `json:"rec"`
-	Rating    flexValue `json:"r"`
 	URL       string    `json:"url"`
 	File      string    `json:"file"`
 	Location  string    `json:"loc"`
@@ -359,23 +369,34 @@ func (p *apiProvider) searchOnce(ctx context.Context, query string) ([]Sound, er
 	sounds := make([]Sound, 0, len(parsed.Recordings))
 	for i := range parsed.Recordings {
 		rec := &parsed.Recordings[i]
-		download := rec.File
+		download := strings.TrimSpace(rec.File)
 		if download == "" {
 			continue
 		}
+		// API 3 says "length"; the older API said "len". Reading only the old
+		// name left every clip at 0 seconds, and PickBest discards clips of
+		// unknown length until its last-resort window — so the API tier looked
+		// empty and the keyless page tier silently took over.
+		length := rec.Length.seconds()
+		if length <= 0 {
+			length = rec.LegLength.seconds()
+		}
+		// "lic" is the Creative Commons deed; the older API published none. An
+		// absent licence stays empty rather than borrowing the recording page,
+		// which is a page, not a licence.
+		licence := strings.TrimSpace(rec.License)
 		sounds = append(sounds, Sound{
 			RecordingID:    rec.ID.String(),
 			ScientificName: joinBinomial(rec.Genus, rec.Species),
 			CommonName:     rec.Common,
 			Recordist:      rec.Recordist,
-			// The API response carries no licence field; the recording page is
-			// linked instead so attribution stays verifiable by a human.
-			LicenseURL:    rec.URL,
-			PageURL:       rec.URL,
-			DownloadURL:   download,
-			Format:        formatFromURL(download),
-			LengthSeconds: rec.Length.seconds(),
-			Rating:        apiRating(rec.Rating.Float()),
+			LicenseName:    licenseNameFromURL(licence),
+			LicenseURL:     licence,
+			PageURL:        rec.URL,
+			DownloadURL:    download,
+			Format:         formatFromURL(download),
+			LengthSeconds:  length,
+			Rating:         apiGrade(rec.Quality.String(), rec.LegRating.String()),
 		})
 	}
 	if len(sounds) == 0 {
@@ -416,6 +437,91 @@ func apiRating(value float64) string {
 	default:
 		return RatingUnknown
 	}
+}
+
+// apiGrade renders Xeno-Canto's quality grade as a letter. API 3 publishes it
+// as a letter ("A".."E") in "q"; the older API published a numeric 0..5 in "r".
+// Whichever field holds a number is mapped through apiRating; anything else
+// contributes its first character, upper-cased.
+func apiGrade(quality, legacyRating string) string {
+	for _, raw := range []string{quality, legacyRating} {
+		raw = strings.TrimSpace(raw)
+		if raw == "" {
+			continue
+		}
+		if value, err := strconv.ParseFloat(raw, 64); err == nil {
+			if grade := apiRating(value); grade != RatingUnknown {
+				return grade
+			}
+			continue
+		}
+		// Only the published A–E grades count; a stray symbol must not become
+		// a rating the sorter has never heard of.
+		grade := strings.ToUpper(raw[:1])
+		switch grade {
+		case RatingExcellent, RatingVeryGood, RatingGood, RatingFair, RatingPoor:
+			return grade
+		}
+	}
+	return RatingUnknown
+}
+
+// ccLicenseNames maps the Creative Commons licence element to the name the
+// attribution tooltip shows. Matching is on the exact element, so "by" can
+// never shadow "by-nc-sa".
+var ccLicenseNames = map[string]string{
+	"by":       "Attribution",
+	"by-sa":    "Attribution-ShareAlike",
+	"by-nd":    "Attribution-NoDerivatives",
+	"by-nc":    "Attribution-NonCommercial",
+	"by-nc-sa": "Attribution-NonCommercial-ShareAlike",
+	"by-nc-nd": "Attribution-NonCommercial-NoDerivatives",
+}
+
+// licenseNameFromURL turns a deed URL such as
+// https://creativecommons.org/licenses/by-nc-sa/4.0/ into
+// "Creative Commons Attribution-NonCommercial-ShareAlike 4.0". Anything it
+// cannot read exactly gets no name at all: a guessed licence would
+// misattribute the recording, which is worse than an unlabelled link.
+func licenseNameFromURL(raw string) string {
+	parts := strings.Split(strings.ToLower(strings.TrimSpace(raw)), "/")
+	for i, part := range parts {
+		if part != "creativecommons.org" {
+			continue
+		}
+		if i+2 >= len(parts) {
+			return ""
+		}
+		switch parts[i+1] {
+		case "licenses":
+			name, ok := ccLicenseNames[parts[i+2]]
+			if !ok {
+				return ""
+			}
+			// A deed URL without a version still names the licence correctly;
+			// only the version is unknown, so nothing is appended (and no
+			// trailing space is left in the tooltip).
+			return "Creative Commons " + name + ccVersionSuffix(parts, i+3)
+		case "publicdomain":
+			switch parts[i+2] {
+			case "zero":
+				return "CC0" + ccVersionSuffix(parts, i+3) + " Public Domain Dedication"
+			case "mark":
+				return "Public Domain Mark" + ccVersionSuffix(parts, i+3)
+			}
+		}
+		return ""
+	}
+	return ""
+}
+
+// ccVersionSuffix returns " <version>" when parts[i] holds one, and "" when the
+// segment is missing or empty.
+func ccVersionSuffix(parts []string, i int) string {
+	if i >= len(parts) || parts[i] == "" {
+		return ""
+	}
+	return " " + parts[i]
 }
 
 // sanitizeProviderMessage strips anything that could echo the API key out of a

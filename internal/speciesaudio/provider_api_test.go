@@ -83,11 +83,11 @@ func TestAPIProviderLenientDecoding(t *testing.T) {
 	  "numPages": 1,
 	  "page": "1",
 	  "recordings": [
-	    {"id":"543338","gen":"Corvus","sp":"brachyrhynchos","cnt":"American Crow",
+	    {"id":"543338","gen":"Corvus","sp":"brachyrhynchos","cnt":"United States","en":"American Crow",
 	     "len":"0:23","rec":"Thomas Magarian",
 	     "url":"https://xeno-canto.org/543338",
 	     "file":"https://xeno-canto.org/543338/download"},
-	    {"id":599999,"gen":"Corvus","sp":"brachyrhynchos","cnt":"American Crow",
+	    {"id":599999,"gen":"Corvus","sp":"brachyrhynchos","cnt":"United States","en":"American Crow",
 	     "len":45,"rec":"Jane Doe","r":5,
 	     "url":"https://xeno-canto.org/599999",
 	     "file":"https://xeno-canto.org/599999/XC599999.wav"},
