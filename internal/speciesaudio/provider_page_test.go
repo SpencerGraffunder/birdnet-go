@@ -140,11 +140,20 @@ func TestPageProviderAnubisWallRejected(t *testing.T) {
 			`<script>/* anubis challenge */</script></body></html>`,
 		`<html><body><div>Anubis is checking your browser</div>` +
 			`<a href="https://xeno-canto.org/123/download">decoy</a></body></html>`,
+		// What xeno-canto actually serves to keyless clients since it moved
+		// tiers: a Greywall interstitial whose title is the only clue.
+		`<!doctype html><html><head><title>Greywall</title>` +
+			`<meta name="greywall:challenge" content="1"></head>` +
+			`<body><noscript>Enable JavaScript</noscript></body></html>`,
+		`<!doctype html><html><head><title>Attention Required</title></head><body>` +
+			`<div class="cf-turnstile">verifying you are human</div></body></html>`,
 	}
 	for _, body := range bodies {
 		p, _ := newPageTestProvider(t, serveHTML(body, http.StatusOK))
 		_, err := p.Search(t.Context(), "Corvus brachyrhynchos")
 		require.ErrorIs(t, err, ErrProviderUnavailable)
+		require.NotErrorIs(t, err, ErrSoundNotFound,
+			"a challenge page must not be read as \"this species has no recordings\"")
 		assert.NotContains(t, err.Error(), "123")
 	}
 }

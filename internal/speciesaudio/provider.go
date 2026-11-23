@@ -392,7 +392,16 @@ func sanitizeProviderMessage(msg, apiKey string) string {
 
 var (
 	downloadHrefRe = regexp.MustCompile(`^https://xeno-canto\.org/(\d+)/download$`)
-	anubisMarkers  = []string{"Verifying visitor request", "Anubis", "anubis"}
+	// botWallMarkers identify a bot-protection interstitial served in place of
+	// the recording listing; matching is case-insensitive. A challenge page
+	// carries no download links, so reading it as a listing would report "this
+	// species has no recordings" and pin a permanent no-recording marker on it
+	// — the failure seen when xeno-canto moved its keyless tier behind Greywall.
+	// The list stays specific: generic words could occur in recordist remarks.
+	botWallMarkers = []string{
+		"anubis", "greywall", "verifying visitor request", "verifying you are human",
+		"checking your browser", "cf-chl", "cf_challenge", "turnstile",
+	}
 )
 
 // pageProvider parses the public species listing page.
@@ -446,11 +455,15 @@ func (p *pageProvider) Search(ctx context.Context, scientificName string) ([]Sou
 		return nil, fmt.Errorf("%w: xeno-canto returned HTTP %d", ErrProviderUnavailable, resp.StatusCode)
 	}
 	text := string(body)
-	for _, marker := range anubisMarkers {
-		if strings.Contains(text, marker) {
+	lowered := strings.ToLower(text)
+	for _, marker := range botWallMarkers {
+		if strings.Contains(lowered, marker) {
 			// Bot protection: the page is a challenge, not a listing. Reading
-			// it further would produce garbage, so stop here.
-			return nil, fmt.Errorf("%w: xeno-canto is serving a bot-verification page", ErrProviderUnavailable)
+			// it further would produce garbage, so stop here — and report it as
+			// an unavailable provider rather than "no recordings", so the
+			// species is retried instead of marked as having none. The keyless
+			// tier is the one behind the wall; an API key still works.
+			return nil, fmt.Errorf("%w: xeno-canto is serving a bot-verification page, an API key is required", ErrProviderUnavailable)
 		}
 	}
 
