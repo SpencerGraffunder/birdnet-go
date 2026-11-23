@@ -194,3 +194,30 @@ func TestPickBestTieBreakIsDeterministic(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "500", best.RecordingID)
 }
+
+// TestPickBestUnknownLengthIsLastResort pins the documented behaviour: unknown
+// lengths lose to anything with a published length, but they are still usable
+// when nothing else exists. Discarding them everywhere made a provider whose
+// length field the parser could not read look completely empty.
+func TestPickBestUnknownLengthIsLastResort(t *testing.T) {
+	// A published length wins even when the unknown-length candidate is rated
+	// higher.
+	best, ok := PickBest([]Sound{
+		cand("1", RatingExcellent, "mp3", 0),
+		cand("2", RatingGood, "mp3", 5),
+	}, SelectPolicy{})
+	require.True(t, ok)
+	assert.Equal(t, "2", best.RecordingID, "a known length in the preferred window beats an unrated unknown")
+
+	// Nothing published: the best-rated unknown is picked rather than nothing.
+	best, ok = PickBest([]Sound{
+		cand("3", RatingGood, "mp3", 0),
+		cand("4", RatingExcellent, "wav", 0),
+	}, SelectPolicy{})
+	require.True(t, ok, "unknown lengths must still serve as the last resort")
+	assert.Equal(t, "4", best.RecordingID)
+
+	// Over-long recordings are still rejected outright, length unknown or not.
+	_, ok = PickBest([]Sound{{RecordingID: "5", DownloadURL: "https://x/y.mp3", LengthSeconds: 500}}, SelectPolicy{})
+	assert.False(t, ok)
+}

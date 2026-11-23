@@ -156,18 +156,25 @@ func PickBest(sounds []Sound, p SelectPolicy) (Sound, bool) {
 		return Sound{}, false
 	}
 
-	for _, tier := range widenTiers(p) {
+	tiers := widenTiers(p)
+	for ti, tier := range tiers {
+		// Unknown length is tolerated only in the final catch-all window. Before
+		// the API's "length" field was read correctly every recording arrived at
+		// 0 seconds, and skipping unknown lengths in EVERY window threw the
+		// whole candidate list away — the provider then looked empty and the
+		// next tier silently took over.
+		lastTier := ti == len(tiers)-1
 		var best []*Sound
 		for _, s := range pool {
 			length := s.LengthSeconds
 			if length <= 0 {
-				// Unknown length: only acceptable in the catch-all window,
-				// where anything is better than no example at all.
+				if !lastTier {
+					continue
+				}
+			} else if length < tier[0] || length > tier[1] {
 				continue
 			}
-			if length >= tier[0] && length <= tier[1] {
-				best = append(best, s)
-			}
+			best = append(best, s)
 		}
 		if len(best) == 0 {
 			continue
