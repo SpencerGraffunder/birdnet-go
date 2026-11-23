@@ -27,6 +27,24 @@ func Slug(scientificName string) (string, error) {
 	return slug, nil
 }
 
+// NameFromSlug reverses Slug well enough to look a species up by the cache's
+// own file name: "anser_anser" becomes "anser anser". Case does not survive
+// Slug, so the result is only ever used to re-derive the same entry, never for
+// display. It reports false unless the value is exactly what Slug would write
+// for that name, which keeps anything the cache would never have produced
+// ("_", "a__b", "..") out of the file-name path.
+func NameFromSlug(slug string) (string, bool) {
+	if !strings.Contains(slug, "_") {
+		return "", false
+	}
+	name := strings.ReplaceAll(slug, "_", " ")
+	round, err := Slug(name)
+	if err != nil || round != slug {
+		return "", false
+	}
+	return name, true
+}
+
 // SpeciesPageSlug turns "Corvus brachyrhynchos" into the listing page segment
 // "Corvus-brachyrhynchos" (title case, hyphenated, binomial only).
 func SpeciesPageSlug(scientificName string) (string, error) {
