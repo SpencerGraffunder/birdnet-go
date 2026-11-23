@@ -22,6 +22,11 @@ const (
 	// FetchLengthLimitSeconds bounds the provider query so a 10-minute epic is
 	// never downloaded just to be trimmed to 10 seconds.
 	FetchLengthLimitSeconds = 180
+
+	// APISearchMinSeconds is the bottom of the length window sent to the API.
+	// Xeno-Canto's len: tag is in seconds, and sub-second clips are artefacts
+	// rather than recordings worth playing.
+	APISearchMinSeconds = 1
 )
 
 // SelectPolicy configures PickBest. Zero values mean "use the defaults".

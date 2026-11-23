@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
 
@@ -55,8 +56,14 @@ func TestAPIProviderQueryShape(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, sounds, 1)
 
-	// The query is exactly the binomial plus the agreed length bound.
-	assert.Equal(t, fmt.Sprintf("sp:%q nr:1-%d", "corvus brachyrhynchos", FetchLengthLimitSeconds), gotQuery)
+	// The query is the binomial plus a length window in SECONDS, and it must
+	// never carry an nr: clause. nr: is a recording-number range: combining it
+	// with sp: makes Xeno-Canto answer "no recordings" for species that have
+	// hundreds, and the cache remembered that verdict for good.
+	assert.Equal(t,
+		fmt.Sprintf("sp:%q len:%d-%d", "corvus brachyrhynchos", APISearchMinSeconds, FetchLengthLimitSeconds),
+		gotQuery)
+	assert.NotContains(t, gotQuery, "nr:")
 	assert.Equal(t, testAPIKey, gotKey)
 	assert.Equal(t, "1", gotPage)
 	assert.Equal(t, "application/json", gotAccept)
@@ -65,7 +72,9 @@ func TestAPIProviderQueryShape(t *testing.T) {
 	// Odd casing and subspecies names fold to the same indexed binomial.
 	_, err = p.Search(t.Context(), "  CORVUS BRACHYRHYNCHOS orientalis ")
 	require.NoError(t, err)
-	assert.Equal(t, fmt.Sprintf("sp:%q nr:1-%d", "corvus brachyrhynchos", FetchLengthLimitSeconds), gotQuery)
+	assert.Equal(t,
+		fmt.Sprintf("sp:%q len:%d-%d", "corvus brachyrhynchos", APISearchMinSeconds, FetchLengthLimitSeconds),
+		gotQuery)
 }
 
 func TestAPIProviderLenientDecoding(t *testing.T) {
@@ -167,8 +176,11 @@ func TestAPIProviderKeyNeverLeaks(t *testing.T) {
 		p, _ := newAPITestProvider(t, testAPIKey, func(w http.ResponseWriter, r *http.Request) {
 			_, _ = fmt.Fprintf(w, `{"error":"unsupported search operator %s"}`, testAPIKey)
 		})
+		// An error field is a fault in the request, not a statement about the
+		// species: it must never travel as ErrSoundNotFound, which the cache
+		// would store as "this species has no example call".
 		_, err := p.Search(ctx, "Corvus brachyrhynchos")
-		require.ErrorIs(t, err, ErrSoundNotFound)
+		require.ErrorIs(t, err, ErrProviderUnavailable)
 		assert.NotContains(t, err.Error(), testAPIKey)
 		assert.Contains(t, err.Error(), "[key]")
 	})
@@ -208,4 +220,73 @@ func TestAPIProviderInvalidName(t *testing.T) {
 		require.ErrorIsf(t, err, ErrInvalidName, "name %q must be rejected", name)
 	}
 	assert.Zero(t, requests.Load(), "invalid names must never reach the network")
+}
+
+// TestAPIProviderRetriesWithoutLengthWindowWhenFilteredQueryIsEmpty pins the
+// two-query contract: an empty length-windowed answer is not evidence that a
+// species has nothing published, because Xeno-Canto answers "nothing in this
+// window" and "nothing published" the same way. The bare species query decides.
+func TestAPIProviderRetriesWithoutLengthWindowWhenFilteredQueryIsEmpty(t *testing.T) {
+	var queries []string
+	p, _ := newAPITestProvider(t, testAPIKey, func(w http.ResponseWriter, r *http.Request) {
+		query := r.URL.Query().Get("query")
+		queries = append(queries, query)
+		if strings.Contains(query, "len:") {
+			_, _ = fmt.Fprint(w, `{"numRecordings":"0","recordings":[]}`)
+			return
+		}
+		_, _ = fmt.Fprint(w, `{"recordings":[{"id":"77","gen":"Ardea","sp":"ibis",`+
+			`"file":"https://xeno-canto.org/77/download","len":"0:08"}]}`)
+	})
+
+	sounds, err := p.Search(t.Context(), "Ardea ibis")
+	require.NoError(t, err, "a species with recordings must not be reported as having none")
+	require.Len(t, sounds, 1)
+	require.Len(t, queries, 2, "the empty windowed answer must be checked against the bare species query")
+	assert.Contains(t, queries[0], "len:")
+	assert.NotContains(t, queries[1], "len:")
+}
+
+// TestAPIProviderReportsNoRecordingOnlyAfterBothQueriesComeBackEmpty keeps the
+// honest negative available: a species Xeno-Canto truly does not carry must be
+// answered as "none" so the cache can stop asking.
+func TestAPIProviderReportsNoRecordingOnlyAfterBothQueriesComeBackEmpty(t *testing.T) {
+	var requests atomic.Int32
+	p, _ := newAPITestProvider(t, testAPIKey, func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		_, _ = fmt.Fprint(w, `{"numRecordings":"0","recordings":[]}`)
+	})
+
+	_, err := p.Search(t.Context(), "Ardea ibis")
+	require.ErrorIs(t, err, ErrSoundNotFound)
+	assert.Equal(t, int32(2), requests.Load(), "windowed and bare query, one request each")
+}
+
+// TestAPIProviderDoesNotRetryAFailedRequest stops the fallback from turning an
+// outage or a rejected request into double traffic.
+func TestAPIProviderDoesNotRetryAFailedRequest(t *testing.T) {
+	cases := []struct {
+		name     string
+		status   int
+		body     string
+		expected error
+	}{
+		{"rate limited", http.StatusTooManyRequests, `{"error":"too many"}`, ErrRateLimited},
+		{"key rejected", http.StatusForbidden, `{"error":"bad key"}`, ErrKeyRejected},
+		{"server error", http.StatusBadGateway, `<html>`, ErrProviderUnavailable},
+		{"rejected query in a 200 body", http.StatusOK, `{"error":"only accepts queries using tags"}`, ErrProviderUnavailable},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var requests atomic.Int32
+			p, _ := newAPITestProvider(t, testAPIKey, func(w http.ResponseWriter, r *http.Request) {
+				requests.Add(1)
+				w.WriteHeader(tc.status)
+				_, _ = fmt.Fprint(w, tc.body)
+			})
+			_, err := p.Search(t.Context(), "Corvus brachyrhynchos")
+			require.ErrorIs(t, err, tc.expected)
+			assert.Equal(t, int32(1), requests.Load(), "a failed request must not be repeated with a wider window")
+		})
+	}
 }

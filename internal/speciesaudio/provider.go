@@ -28,6 +28,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/tphakala/birdnet-go/internal/errors"
 	"github.com/tphakala/birdnet-go/internal/httpclient"
 	"golang.org/x/net/html"
 )
@@ -262,11 +263,51 @@ func (p *apiProvider) Search(ctx context.Context, scientificName string) ([]Soun
 	if err != nil {
 		return nil, err
 	}
+	// Two queries at most, in this order. The length-windowed one first, because
+	// a page of short clips is what an example call needs; then the bare species
+	// query, because Xeno-Canto answers "nothing in this window" and "this
+	// species has nothing published" identically (200, empty list) — and the
+	// second query is what tells them apart. Without it, a filter that is too
+	// narrow gets remembered as a species with no example call, permanently:
+	// an earlier revision asked for nr:1-180 (recording numbers, not seconds!)
+	// and every keyed lookup came back empty.
+	windowed := apiSpeciesQuery(binomial, true)
+	sounds, err := p.searchOnce(ctx, windowed)
+	if err == nil {
+		return sounds, nil
+	}
+	if !errors.Is(err, ErrSoundNotFound) {
+		// Rate limited, key rejected, transport trouble, a rejected query:
+		// retrying with a wider window cannot help, and hammering a throttled
+		// API with a second request would only make it worse.
+		return nil, err
+	}
+	if err := p.pacer.wait(ctx); err != nil {
+		return nil, err
+	}
+	return p.searchOnce(ctx, apiSpeciesQuery(binomial, false))
+}
+
+// apiSpeciesQuery builds one API query for a species. len: is measured in
+// SECONDS; nr: is a recording-number range and has nothing to do with length —
+// combining sp: with nr: returns nothing at all, which is how a whole install
+// silently lost its example calls.
+func apiSpeciesQuery(binomial string, withLengthWindow bool) string {
+	if withLengthWindow {
+		return fmt.Sprintf("sp:%q len:%d-%d", binomial, APISearchMinSeconds, FetchLengthLimitSeconds)
+	}
+	return fmt.Sprintf("sp:%q", binomial)
+}
+
+// searchOnce runs one query and returns the candidate recordings it publishes.
+// ErrSoundNotFound means Xeno-Canto answered correctly with an empty list; any
+// other error is an outage or a request fault and must not be treated as
+// "this species has no example call".
+func (p *apiProvider) searchOnce(ctx context.Context, query string) ([]Sound, error) {
 	if err := p.pacer.wait(ctx); err != nil {
 		return nil, err
 	}
 
-	query := fmt.Sprintf("sp:%q nr:1-%d", binomial, FetchLengthLimitSeconds)
 	base := p.endpoint
 	if base == "" {
 		base = apiEndpoint
@@ -308,9 +349,11 @@ func (p *apiProvider) Search(ctx context.Context, scientificName string) ([]Soun
 		return nil, fmt.Errorf("%w: xeno-canto API returned an unreadable response", ErrProviderUnavailable)
 	}
 	if parsed.Error != "" {
-		// Query syntax and similar complaints: treat as "no example for this
-		// species" rather than an outage, since retrying cannot help.
-		return nil, fmt.Errorf("%w: xeno-canto: %s", ErrSoundNotFound, sanitizeProviderMessage(parsed.Error, p.apiKey))
+		// Xeno-Canto answers a rejected query with HTTP 200 and an error field.
+		// That is a fault in the request, not a statement about the species, so
+		// it must never reach the cache as "no example call exists" — the cache
+		// remembers that verdict and stops asking.
+		return nil, fmt.Errorf("%w: xeno-canto: %s", ErrProviderUnavailable, sanitizeProviderMessage(parsed.Error, p.apiKey))
 	}
 
 	sounds := make([]Sound, 0, len(parsed.Recordings))
