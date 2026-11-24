@@ -246,6 +246,21 @@ RUN apt-get update -q && apt-get install -q -y --no-install-recommends \
 # sharing an unrelated UID cannot overwrite them. The same flag is used for the
 # TFLite and OpenVINO extractions below for the same reason.
 ARG ONNXRUNTIME_VERSION
+# FORK NOTE (SpencerGraffunder/birdnet-go, 2026-11-24): Microsoft made the
+# microsoft/onnxruntime repository PRIVATE on 2026-11-17 while investigating malicious
+# content published under the org, and the action removed the repository WITH its release
+# assets — every releases/download URL now answers 404 for every version, so a cold build
+# of this stage cannot get the library from GitHub at all (upstream hits the same wall on
+# its next base refresh). GitHub Releases is still tried FIRST so this heals by itself if
+# the org comes back. The fallback installs the same C library from Microsoft's own
+# `onnxruntime` wheel on PyPI: the URL and digest are resolved from the PyPI JSON API, the
+# digest is then checked against the per-arch pin below rather than against PyPI's own
+# claim, and only the shared libraries are taken — the headers are irrelevant because
+# onnxruntime is dlopened at runtime and never linked at compile time. cp313 wheels are
+# pinned by tag so the file chosen cannot drift between builds. The bare-soname symlink
+# mirrors the one the GitHub archive ships.
+ARG ONNXRUNTIME_PYPI_SHA256_X64=02ea12a28c069ea8510093d95a7f6ff8126bfd9fc5c0d3381c03b80fb2b424ba
+ARG ONNXRUNTIME_PYPI_SHA256_AARCH64=54d02baff2df38777b4c3cc7af326406fe8b8a48f54720f4c446d2d327920a79
 RUN set -eu; \
     ONNX_ARCH=$(case "${TARGETPLATFORM}" in \
         "linux/amd64") echo "x64" ;; \
@@ -253,12 +268,49 @@ RUN set -eu; \
         *) echo "Error: unsupported platform ${TARGETPLATFORM}" >&2; exit 1 ;; \
     esac); \
     echo "Downloading ONNX Runtime ${ONNXRUNTIME_VERSION} for ${ONNX_ARCH}"; \
-    curl -fsSL "https://github.com/microsoft/onnxruntime/releases/download/v${ONNXRUNTIME_VERSION}/onnxruntime-linux-${ONNX_ARCH}-${ONNXRUNTIME_VERSION}.tgz" \
-        -o /tmp/onnxruntime.tgz; \
-    mkdir -p /tmp/onnxruntime; \
-    tar --no-same-owner -xzf /tmp/onnxruntime.tgz -C /tmp/onnxruntime --strip-components=1; \
-    cp -a /tmp/onnxruntime/lib/libonnxruntime*.so* /usr/lib/; \
-    rm -rf /tmp/onnxruntime /tmp/onnxruntime.tgz
+    if curl -fsSL "https://github.com/microsoft/onnxruntime/releases/download/v${ONNXRUNTIME_VERSION}/onnxruntime-linux-${ONNX_ARCH}-${ONNXRUNTIME_VERSION}.tgz" \
+        -o /tmp/onnxruntime.tgz; then \
+        mkdir -p /tmp/onnxruntime; \
+        tar --no-same-owner -xzf /tmp/onnxruntime.tgz -C /tmp/onnxruntime --strip-components=1; \
+        cp -a /tmp/onnxruntime/lib/libonnxruntime*.so* /usr/lib/; \
+        rm -rf /tmp/onnxruntime /tmp/onnxruntime.tgz; \
+    else \
+        echo "ONNX Runtime ${ONNXRUNTIME_VERSION} is not available on GitHub Releases (microsoft/onnxruntime removed 2026-11-17); installing it from the PyPI wheel instead"; \
+        ONNX_SHA256_PIN=$(case "${ONNX_ARCH}" in \
+            "x64") echo "${ONNXRUNTIME_PYPI_SHA256_X64}" ;; \
+            *) echo "${ONNXRUNTIME_PYPI_SHA256_AARCH64}" ;; \
+        esac); \
+        PYPI_ARCH=$(case "${ONNX_ARCH}" in \
+            "x64") echo "x86_64" ;; \
+            *) echo "${ONNX_ARCH}" ;; \
+        esac); \
+        echo "PyPI wheel tag for ${ONNX_ARCH} is ${PYPI_ARCH}"; \
+        PYPI_ROW=$(curl -fsSL "https://pypi.org/pypi/onnxruntime/${ONNXRUNTIME_VERSION}/json" \
+            | jq -r --arg suffix "-cp313-cp313-manylinux_2_28_${PYPI_ARCH}.whl" \
+                '.urls[] | select(.filename | endswith($suffix)) | .url + " " + .digests.sha256' | head -n1); \
+        if [ -z "${PYPI_ROW}" ]; then \
+            echo "Error: PyPI has no cp313 manylinux_2_28_${PYPI_ARCH} wheel for onnxruntime ${ONNXRUNTIME_VERSION}" >&2; exit 1; \
+        fi; \
+        set -- ${PYPI_ROW}; WHEEL_URL="$1"; WHEEL_SHA256="$2"; \
+        if [ "${WHEEL_SHA256}" != "${ONNX_SHA256_PIN}" ]; then \
+            echo "Error: the PyPI onnxruntime ${ONNXRUNTIME_VERSION} ${ONNX_ARCH} wheel is ${WHEEL_SHA256}," >&2; \
+            echo "       not the pinned ${ONNX_SHA256_PIN}. If ONNXRUNTIME_VERSION was raised, update the" >&2; \
+            echo "       matching ONNXRUNTIME_PYPI_SHA256_* ARG in this Dockerfile." >&2; exit 1; \
+        fi; \
+        curl -fsSL "${WHEEL_URL}" -o /tmp/onnxruntime.whl; \
+        echo "${WHEEL_SHA256}  /tmp/onnxruntime.whl" | sha256sum -c -; \
+        apt-get update -qq; \
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends unzip >/dev/null; \
+        mkdir -p /tmp/onnxruntime; \
+        unzip -q -o /tmp/onnxruntime.whl 'onnxruntime/capi/libonnxruntime*.so*' -d /tmp/onnxruntime; \
+        cp -a /tmp/onnxruntime/onnxruntime/capi/libonnxruntime*.so* /usr/lib/; \
+        ln -sf "libonnxruntime.so.${ONNXRUNTIME_VERSION}" /usr/lib/libonnxruntime.so; \
+        apt-get purge -y -qq unzip >/dev/null; \
+        apt-get autoremove -y -qq >/dev/null; \
+        rm -rf /tmp/onnxruntime /tmp/onnxruntime.whl /var/lib/apt/lists/*; \
+    fi; \
+    test -f "/usr/lib/libonnxruntime.so.${ONNXRUNTIME_VERSION}"; \
+    ls -l /usr/lib/libonnxruntime*
 
 # TensorFlow Lite C runtime library: installed for all arches. The stock default
 # classifier is ONNX on arm64 (reduced memory) and TFLite on amd64, but every arch
