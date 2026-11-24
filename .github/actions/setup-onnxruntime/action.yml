@@ -35,18 +35,81 @@ runs:
         ONNX_DIR="${RUNNER_TEMP}/onnxruntime"
         mkdir -p "${ONNX_DIR}"
 
+        # FORK PATCH (2026-11-24): Microsoft made microsoft/onnxruntime private on
+        # 2026-11-17 while investigating malicious content published under the org,
+        # and that took the repository AND every release asset with it — the URLs
+        # below answer 404 for all versions. `curl -fsSL` exits 22 on that, so this
+        # step became a hard failure for every job that uses it, which is why
+        # golangci-test has been red on every push to main since. GitHub Releases
+        # stays the primary source so this self-heals when upstream returns; Linux
+        # builds fall back to PyPI's `onnxruntime` wheel, which carries the same
+        # libonnxruntime C library this action installs. The wheel is published by
+        # Microsoft, and PyPI publishes a sha256 per file, which is verified before
+        # anything is unpacked. Only the libraries are needed: ONNX Runtime is
+        # dlopened at runtime, never linked at compile time (see the Dockerfile's
+        # runtime-base comment). The container image is covered separately by the
+        # fork patch in .github/workflows/base-image.yml, which reuses upstream's
+        # already-published base image rather than rebuilding from this recipe.
+        pypi_fallback() {
+          # $1: manylinux architecture tag (x86_64 | aarch64)
+          local json info url want_sha versioned
+          json=$(curl -fsSL "https://pypi.org/pypi/onnxruntime/${VERSION}/json") || {
+            echo "::error::PyPI metadata lookup failed for onnxruntime ${VERSION}"
+            return 1
+          }
+          info=$(printf '%s' "$json" | python3 -c "import json,sys; fs=[f for f in json.load(sys.stdin)['urls'] if f['filename'].endswith(sys.argv[1])]; f=sorted(fs, key=lambda f: f['filename'])[0]; print(f['url'] + ' ' + f['digests']['sha256'])" "manylinux_2_28_$1.whl") || {
+            echo "::error::PyPI has no manylinux $1 wheel for onnxruntime ${VERSION}"
+            return 1
+          }
+          url=${info%% *}
+          want_sha=${info##* }
+          [ -n "$url" ] && [ -n "$want_sha" ] || {
+            echo "::error::could not resolve a PyPI wheel for onnxruntime ${VERSION} $1"
+            return 1
+          }
+          echo "Falling back to PyPI wheel: ${url##*/}"
+          curl -fsSL "$url" -o "${ONNX_DIR}.whl" || return 1
+          echo "${want_sha}  ${ONNX_DIR}.whl" | sha256sum -c - || {
+            echo "::error::sha256 mismatch on the PyPI onnxruntime wheel (${VERSION} $1)"
+            return 1
+          }
+          mkdir -p "${ONNX_DIR}/lib"
+          python3 -c "import sys,zipfile; z=zipfile.ZipFile(sys.argv[1]); [open(sys.argv[2] + '/' + n.rsplit('/', 1)[-1], 'wb').write(z.read(n)) for n in z.namelist() if n.rsplit('/', 1)[-1].startswith('libonnxruntime') and '.so' in n and 'pybind' not in n]" "${ONNX_DIR}.whl" "${ONNX_DIR}/lib" || return 1
+          rm -f "${ONNX_DIR}.whl"
+          # The GitHub archive ships a bare-soname symlink; the wheel does not, and
+          # callers (including the ONNX functional tests) default to
+          # /usr/lib/libonnxruntime.so.
+          if [ ! -e "${ONNX_DIR}/lib/libonnxruntime.so" ]; then
+            versioned=$(find "${ONNX_DIR}/lib" -maxdepth 1 -name 'libonnxruntime.so*' -type f | head -1)
+            [ -n "$versioned" ] || {
+              echo "::error::the PyPI onnxruntime wheel contained no libonnxruntime .so"
+              return 1
+            }
+            ln -sf "$(basename "$versioned")" "${ONNX_DIR}/lib/libonnxruntime.so"
+          fi
+          echo "Installed ONNX Runtime ${VERSION} from PyPI (sha256 verified)"
+        }
+
         case "${{ inputs.target-platform }}" in
           linux-amd64)
-            curl -fsSL "https://github.com/microsoft/onnxruntime/releases/download/v${VERSION}/onnxruntime-linux-x64-${VERSION}.tgz" \
-              -o "${ONNX_DIR}.tgz"
-            tar -xzf "${ONNX_DIR}.tgz" -C "${ONNX_DIR}" --strip-components=1
-            rm "${ONNX_DIR}.tgz"
+            if ! curl -fsSL "https://github.com/microsoft/onnxruntime/releases/download/v${VERSION}/onnxruntime-linux-x64-${VERSION}.tgz" \
+              -o "${ONNX_DIR}.tgz"; then
+              echo "::warning::ONNX Runtime GitHub release unavailable (repository removed upstream 2026-11-17); falling back to PyPI"
+              pypi_fallback x86_64 || exit 1
+            else
+              tar -xzf "${ONNX_DIR}.tgz" -C "${ONNX_DIR}" --strip-components=1
+              rm "${ONNX_DIR}.tgz"
+            fi
             ;;
           linux-arm64)
-            curl -fsSL "https://github.com/microsoft/onnxruntime/releases/download/v${VERSION}/onnxruntime-linux-aarch64-${VERSION}.tgz" \
-              -o "${ONNX_DIR}.tgz"
-            tar -xzf "${ONNX_DIR}.tgz" -C "${ONNX_DIR}" --strip-components=1
-            rm "${ONNX_DIR}.tgz"
+            if ! curl -fsSL "https://github.com/microsoft/onnxruntime/releases/download/v${VERSION}/onnxruntime-linux-aarch64-${VERSION}.tgz" \
+              -o "${ONNX_DIR}.tgz"; then
+              echo "::warning::ONNX Runtime GitHub release unavailable (repository removed upstream 2026-11-17); falling back to PyPI"
+              pypi_fallback aarch64 || exit 1
+            else
+              tar -xzf "${ONNX_DIR}.tgz" -C "${ONNX_DIR}" --strip-components=1
+              rm "${ONNX_DIR}.tgz"
+            fi
             ;;
           windows-amd64)
             curl -fsSL "https://github.com/microsoft/onnxruntime/releases/download/v${VERSION}/onnxruntime-win-x64-${VERSION}.zip" \
