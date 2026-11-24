@@ -23,7 +23,12 @@ on:
         default: dev
   push:
     paths-ignore:
+      # The image is built from the Dockerfile, which provisions its own ONNX /
+      # TFLite / OpenVINO libraries. Editing CI plumbing (workflows, composite
+      # actions, helper scripts) or docs must not burn a multi-arch image build.
       - ".github/workflows/**"
+      - ".github/actions/**"
+      - ".github/scripts/**"
       - "**.md"
     branches:
       # Only run on push to main branch
