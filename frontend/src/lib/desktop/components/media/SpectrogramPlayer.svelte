@@ -30,6 +30,9 @@
   import { t } from '$lib/i18n';
   import { playButtonLabelKey } from '$lib/utils/audio';
   import { loggers } from '$lib/utils/logger';
+  import { BIRD_NYQUIST_KHZ, MODEL_TYPE_BAT } from '$lib/utils/spectrogramAxis';
+  import { useCallOverlay, callOverlayText } from '$lib/utils/useCallOverlay.svelte';
+  import CallRegionOverlay from './CallRegionOverlay.svelte';
   import {
     SPECTROGRAM_REASON,
     fetchSpectrogramStatus,
@@ -53,6 +56,7 @@
     detectionId: string;
     spectrogramSize?: SpectrogramSize;
     denoisePreset?: string;
+    modelType?: string;
     onPlayStart?: () => void;
     onPlayEnd?: () => void;
   }
@@ -62,6 +66,7 @@
     detectionId,
     spectrogramSize = 'md',
     denoisePreset = '',
+    modelType = '',
     onPlayStart,
     onPlayEnd,
   }: Props = $props();
@@ -122,6 +127,11 @@
   let retryCount = $state(0);
   let retryTimer: ReturnType<typeof setTimeout> | undefined;
   let cacheKey = $state(0);
+
+  // The `<img>` element and a counter bumped on every successful load: the call overlay is
+  // measured from the picture's own pixels, which only exist once it has loaded.
+  let spectrogramImage = $state<HTMLImageElement | null>(null);
+  let spectrogramVersion = $state(0);
 
   const spectrogramUrl = $derived(
     buildAppUrl(
@@ -202,6 +212,7 @@
     spectrogramLoader.setLoading(false);
     retryCount = 0;
     cancelStatusCheck();
+    spectrogramVersion++;
   }
 
   function handleSpectrogramError() {
@@ -227,6 +238,22 @@
   const seekMax = $derived(usableDuration(audio.duration));
   const seekNow = $derived(clampSeconds(audio.currentTime, seekMax));
   const seekValueText = $derived(seekSliderValueText(seekNow, seekMax));
+
+  // --- Where in the clip the call is ---
+  // The row asks the server for a raw spectrogram, so the image is all raster and the
+  // shading needs no inset. A bird clip's axis tops out at 12 kHz; a bat clip's axis
+  // follows its own capture rate, which a list row does not fetch, so a bat row shades
+  // time only rather than guess at a frequency.
+  const spectrogramAxesDrawn = false;
+  const spectrogramNyquistKHz = $derived(modelType === MODEL_TYPE_BAT ? 0 : BIRD_NYQUIST_KHZ);
+  const callOverlay = useCallOverlay({
+    image: () => spectrogramImage,
+    durationSec: () => seekMax,
+    axesDrawn: () => spectrogramAxesDrawn,
+    nyquistKHz: () => spectrogramNyquistKHz,
+    version: () => spectrogramVersion,
+  });
+  const callOverlaySummary = $derived(callOverlayText(callOverlay.overlay, seekMax));
 
   function seekToClientX(clientX: number) {
     if (!seekBar || seekMax <= 0) return;
@@ -298,14 +325,28 @@
       </div>
     {:else}
       <img
+        bind:this={spectrogramImage}
         src={spectrogramUrl}
         alt={t('components.audio.spectrogramAlt')}
+        title={callOverlaySummary || undefined}
         decoding="async"
         class="spectrogram-img"
         class:invisible={spectrogramLoader.loading}
         onload={handleSpectrogramLoad}
         onerror={handleSpectrogramError}
       />
+    {/if}
+
+    <!-- Where the bird is in this clip: shaded columns over the calls, so a row can be
+         read before it is played. The same words are available to screen readers. -->
+    {#if callOverlay.overlay}
+      <CallRegionOverlay
+        overlay={callOverlay.overlay}
+        durationSec={seekMax}
+        nyquistKHz={spectrogramNyquistKHz}
+        axesDrawn={spectrogramAxesDrawn}
+      />
+      <span class="sr-only">{callOverlaySummary}</span>
     {/if}
 
     <!-- Play/pause overlay button -->
@@ -457,16 +498,18 @@
       height 0.15s ease;
   }
 
-  /* Hidden by scale rather than display, so the appearance transition runs. */
+  /* Hidden by scale rather than display, so the appearance transition runs.
+     The dot sits on the rail's centre line, not above it: the rail is 3px tall and flush
+     with the strip's bottom edge (centre 1.5px up), so a 9px dot starts at 1.5px - 4.5px. */
   .seek-thumb {
     position: absolute;
-    bottom: 0;
+    bottom: calc(1.5px - 4.5px);
     width: 9px;
     height: 9px;
     border: 1px solid var(--color-base-100);
     border-radius: 50%;
     background: var(--color-primary);
-    transform: translate(-50%, -1px) scale(0);
+    transform: translate(-50%, 0) scale(0);
     transition: transform 0.15s ease;
   }
 
@@ -479,7 +522,7 @@
   .seek-strip:hover .seek-thumb,
   .seek-strip:focus-visible .seek-thumb,
   .seek-strip.is-scrubbing .seek-thumb {
-    transform: translate(-50%, -1px) scale(1);
+    transform: translate(-50%, 0) scale(1);
   }
 
   .seek-strip:focus-visible {

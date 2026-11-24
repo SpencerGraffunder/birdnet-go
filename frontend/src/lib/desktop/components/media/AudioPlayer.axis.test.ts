@@ -105,6 +105,16 @@ describe('AudioPlayer frequency axis and clip sample rate', () => {
     return Array.from(container.querySelectorAll('.freq-label')).map(el => el.textContent.trim());
   }
 
+  // Where each label sits, so a test can say which row of pixels it landed on.
+  function labelBottoms(container: HTMLElement): Map<string, number> {
+    return new Map(
+      Array.from(container.querySelectorAll<HTMLElement>('.freq-label')).map(el => [
+        el.textContent.trim(),
+        parseFloat(el.style.bottom),
+      ])
+    );
+  }
+
   // Fires the image load event, then reads the axis labels: the bat axis is
   // drawn only over a loaded image.
   async function loadedLabels(container: HTMLElement): Promise<string[]> {
@@ -229,6 +239,38 @@ describe('AudioPlayer frequency axis and clip sample rate', () => {
       expect(labels(container)).toEqual(BIRD_LABELS);
       expect(imageSrc()).not.toContain('sr=');
       expect(detailCalls()).toHaveLength(0);
+    });
+
+    it('reads the whole box until the image reports its size', async () => {
+      // jsdom never decodes an image, so this is also the state every other test in
+      // this file runs in: the axis must still be there, placed on the box itself.
+      const { container } = mount({ modelType: 'bird' });
+      await fireEvent.load(screen.getByAltText(SPECTROGRAM_ALT));
+      await settle();
+
+      const six = labelBottoms(container).get('6k');
+      expect(six).toBeCloseTo(50, 2);
+    });
+
+    it('places labels on the raster the image paints, not on the box around it', async () => {
+      // A served spectrogram with the server's axes painted into the picture: 1170x591
+      // with the plot drawn between y=30 and y=543. The 12 kHz tick belongs at the top
+      // of that plot and 1 kHz at the bottom of it — neither is an edge of the image,
+      // and a label at kHz/nyquist of the whole box lands several points off its row.
+      const { container } = mount({ modelType: 'bird', spectrogramRaw: false });
+      const img = screen.getByAltText(SPECTROGRAM_ALT);
+      Object.defineProperty(img, 'naturalWidth', { value: 1170, configurable: true });
+      Object.defineProperty(img, 'naturalHeight', { value: 591, configurable: true });
+      await fireEvent.load(img);
+      await settle();
+
+      const bottoms = labelBottoms(container);
+      // (591 - 30 - 513) px of axis below the plot, 513 px of plot, out of 591 px.
+      expect(bottoms.get('12k')).toBeCloseTo(((591 - 30) / 591) * 100, 2);
+      expect(bottoms.get('6k')).toBeCloseTo(((48 + 513 / 2) / 591) * 100, 2);
+      expect(bottoms.get('1k')).toBeCloseTo(((48 + 513 / 12) / 591) * 100, 2);
+      // The whole-box reading would have put the top tick exactly on the top edge.
+      expect(bottoms.get('12k')).not.toBeCloseTo(100, 1);
     });
 
     it('updates the axis and URL when the rate prop changes', async () => {

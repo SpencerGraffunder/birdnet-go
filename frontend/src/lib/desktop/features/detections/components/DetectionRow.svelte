@@ -305,6 +305,7 @@
         detectionId={detection.id.toString()}
         spectrogramSize="md"
         denoisePreset={getPlaybackDenoiseDefault()}
+        modelType={detection.modelType ?? ''}
       />
     {:else if detection.spectrogramOnly}
       <!-- Retention removed the audio but kept the image: no player, no download. -->

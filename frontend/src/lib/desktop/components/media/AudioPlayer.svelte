@@ -89,7 +89,14 @@
     parseSpectrogramStatus,
     type SpectrogramGenerationStatus,
   } from '$lib/utils/spectrogramStatus';
-  import { batFrequencyAxis } from '$lib/utils/spectrogramAxis';
+  import { batFrequencyAxis, BIRD_NYQUIST_KHZ, MODEL_TYPE_BAT } from '$lib/utils/spectrogramAxis';
+  import {
+    frequencyBottomPercent,
+    timeLeftPercent,
+    type SpectrogramImageGeometry,
+  } from '$lib/utils/callOverlay';
+  import { useCallOverlay, callOverlayText } from '$lib/utils/useCallOverlay.svelte';
+  import CallRegionOverlay from './CallRegionOverlay.svelte';
   import { get } from 'svelte/store';
   import { dashboardSettings } from '$lib/stores/settings';
   import {
@@ -193,6 +200,13 @@
   let progressBar: HTMLDivElement; // Bound in the template, read by handleProgressClick
   // svelte-ignore non_reactive_update
   let spectrogramImage: HTMLImageElement; // Template-only binding
+  // Bumped every time the spectrogram image finishes loading, so measurement that reads
+  // its pixels re-runs for a replaced image (retry, denoise, processed render).
+  let spectrogramVersion = $state(0);
+  // The image's own pixel box, captured on load. naturalWidth/naturalHeight are plain DOM
+  // properties — not reactive — so the load handler is the only moment they become true,
+  // and anything that places things on the picture has to hang off a value that is.
+  let spectrogramPixels = $state<{ width: number; height: number } | null>(null);
 
   // Audio state
   let isPlaying = $state(false);
@@ -389,12 +403,13 @@
   const FILTER_HP_MAX_FREQ = 10000;
 
   // Frequency scale overlay. Bird spectrograms are drawn for 24 kHz, so their
-  // axis is a fixed 0-12 kHz. Bat spectrograms are rendered at the clip's own
-  // sample rate, so their axis runs from 0 to half the clip sample rate. Without a
-  // known rate the bat axis is hidden rather than guessed.
-  const BIRD_NYQUIST_KHZ = 12;
+  // axis is a fixed 0-12 kHz (BIRD_NYQUIST_KHZ). Bat spectrograms are rendered at
+  // the clip's own sample rate, so their axis runs from 0 to half the clip sample
+  // rate. Without a known rate the bat axis is hidden rather than guessed.
   const BIRD_TICKS_KHZ = [12, 10, 8, 6, 5, 4, 3, 2, 1];
-  const MODEL_TYPE_BAT = 'bat';
+  // The progress bar is a plain box: time runs edge to edge across it, unlike an image
+  // whose raster stops short of its painted axes.
+  const FULL_WIDTH_TRACK: SpectrogramImageGeometry = { width: 100, height: 100, axesDrawn: false };
   // Query parameter that tells the server the rate the axis is drawn from; the
   // server then serves only the exact render for that rate (404 otherwise).
   const SPECTROGRAM_RATE_PARAM = 'sr';
@@ -1520,6 +1535,53 @@
 
   // Usable clip length and position for seeking and the inline progress bar's slider semantics
   const seekMax = $derived(usableDuration(duration));
+
+  // --- Where in this recording the call is ---
+  // The spectrogram is a picture of this clip, so the pixels already on screen say where
+  // the bird is; the stored detection only knows the capture window. See $lib/utils/callOverlay.
+  const spectrogramGeometry = $derived<SpectrogramImageGeometry | null>(
+    spectrogramPixels && spectrogramPixels.width > 0 && spectrogramPixels.height > 0
+      ? {
+          width: spectrogramPixels.width,
+          height: spectrogramPixels.height,
+          axesDrawn: !spectrogramRaw,
+        }
+      : null
+  );
+  const callOverlay = useCallOverlay({
+    image: () => spectrogramImage ?? null,
+    durationSec: () => seekMax,
+    axesDrawn: () => !spectrogramRaw,
+    nyquistKHz: () => freqNyquistKHz,
+    version: () => spectrogramVersion,
+  });
+  const callOverlaySummary = $derived(callOverlayText(callOverlay.overlay, seekMax));
+
+  // Frequency labels on the rows of pixels they name. When the image carries the
+  // server-painted axes the raster stops short of the image edges, so a label at
+  // kHz/nyquist of the whole box sits off its own tick. Until the image reports its size
+  // there is nothing to measure, and the axis falls back to the whole-box reading rather
+  // than going missing: a late label is a nudge, a missing axis is a lost reference.
+  const freqLabelPositions = $derived(
+    freqTicksKHz.map(khz => {
+      const wholeBoxPercent = (khz / freqNyquistKHz) * 100;
+      const onRaster = spectrogramGeometry
+        ? frequencyBottomPercent(khz, freqNyquistKHz, spectrogramGeometry)
+        : null;
+      return { khz, bottomPercent: onRaster ?? wholeBoxPercent };
+    })
+  );
+
+  // The same call times on the progress bar, where the picture of the clip is not.
+  const callProgressSpans = $derived(
+    (callOverlay.overlay?.regions ?? []).flatMap(region => {
+      const left = timeLeftPercent(region.startSec, seekMax, FULL_WIDTH_TRACK);
+      const right = timeLeftPercent(region.endSec, seekMax, FULL_WIDTH_TRACK);
+      return left === null || right === null || right <= left
+        ? []
+        : [{ left, width: right - left, primary: region.primary, key: `${left.toFixed(3)}` }];
+    })
+  );
   const seekNow = $derived(clampSeconds(currentTime, seekMax));
   const seekValueText = $derived(seekSliderValueText(seekNow, seekMax));
 
@@ -1930,6 +1992,10 @@
     clearSpectrogramRetryTimer();
     clearStatusPollTimer(); // Also clear status polling
     clearSpectrogramProbe();
+    spectrogramPixels = spectrogramImage
+      ? { width: spectrogramImage.naturalWidth, height: spectrogramImage.naturalHeight }
+      : null;
+    spectrogramVersion++;
   };
 
   const handleSpectrogramError = async (event: Event) => {
@@ -2621,6 +2687,7 @@
       id={`spectrogram-${detectionId}`}
       src={spectrogramUrl}
       alt={t('components.audio.spectrogramAlt')}
+      title={callOverlaySummary || undefined}
       decoding="async"
       class={responsive
         ? enableClipExtraction
@@ -2704,16 +2771,25 @@
        the clip sample rate; a bat axis without a known rate has no ticks, and a
        bat axis is drawn only once its image has loaded) -->
   {#if showFreqAxis}
-    {#each freqTicksKHz as freq (freq)}
-      <span class="freq-label" style:bottom="{(freq / freqNyquistKHz) * 100}%" aria-hidden="true"
-        >{freq}k</span
+    {#each freqLabelPositions as tick (tick.khz)}
+      <span class="freq-label" style:bottom="{tick.bottomPercent}%" aria-hidden="true"
+        >{tick.khz}k</span
       >
-      <div
-        class="freq-line"
-        style:bottom="{(freq / freqNyquistKHz) * 100}%"
-        aria-hidden="true"
-      ></div>
+      <div class="freq-line" style:bottom="{tick.bottomPercent}%" aria-hidden="true"></div>
     {/each}
+  {/if}
+
+  <!-- Where the call is in this recording: shaded columns over the moments the bird is
+       singing and a strip over the frequencies it occupies. The same information in words
+       goes to the picture's tooltip and to screen readers. -->
+  {#if callOverlay.overlay}
+    <CallRegionOverlay
+      overlay={callOverlay.overlay}
+      durationSec={seekMax}
+      nyquistKHz={freqNyquistKHz}
+      axesDrawn={!spectrogramRaw}
+    />
+    <span class="sr-only">{callOverlaySummary}</span>
   {/if}
 
   <!-- Audio element is created dynamically in onMount for iOS Safari compatibility -->
@@ -2909,7 +2985,7 @@
         <div
           bind:this={progressBar}
           id={progressId}
-          class="grow bg-gray-200 rounded-full h-1.5 mx-2 cursor-pointer"
+          class="relative grow overflow-hidden bg-gray-200 rounded-full h-1.5 mx-2 cursor-pointer"
           role="slider"
           tabindex="0"
           aria-label={t('media.audio.seek')}
@@ -2925,6 +3001,18 @@
             class="bg-primary h-1.5 rounded-full transition-all duration-100"
             style:width="{progress}%"
           ></div>
+          <!-- The calls in this clip, at the same times the spectrogram shades them. These
+             marks are deliberately neutral rather than the theme's primary: they have to
+             stay visible both on the unfilled track and on the played part behind them. -->
+          {#each callProgressSpans as span (span.key)}
+            <div
+              class="call-tick"
+              class:is-primary={span.primary}
+              style:left="{span.left}%"
+              style:width="{span.width}%"
+              aria-hidden="true"
+            ></div>
+          {/each}
         </div>
 
         <!-- Current time -->
@@ -3039,6 +3127,21 @@
 
   :global(.group:hover) .freq-line {
     background: rgb(255 255 255 / 0.12);
+  }
+
+  /* Call marks on the progress bar. Neutral base-content rather than the primary hue the
+     bar fills with, so a mark stays visible on both the empty track and the part already
+     played — a highlight that vanishes as you listen would be worse than none. */
+  .call-tick {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    min-width: 2px;
+    background: color-mix(in srgb, var(--color-base-content) 32%, transparent);
+  }
+
+  .call-tick.is-primary {
+    background: color-mix(in srgb, var(--color-base-content) 55%, transparent);
   }
 
   .spectrogram-skeleton {

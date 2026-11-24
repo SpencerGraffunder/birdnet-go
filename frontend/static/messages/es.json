@@ -5372,7 +5372,12 @@
       "generateButton": "Generar",
       "generating": "Generando...",
       "generationFailed": "Error al generar el espectrograma",
-      "generationSuccess": "Espectrograma generado exitosamente"
+      "generationSuccess": "Espectrograma generado exitosamente",
+      "callAt": "Llamada más fuerte en {time}",
+      "callAtBand": "Llamada más fuerte en {time}, {band}",
+      "callTimeRange": "{start}–{end}",
+      "callBandRange": "{low}–{high} kHz",
+      "callOtherShaded": "Las demás llamadas de este clip también están sombreadas."
     }
   },
   "components": {

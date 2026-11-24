@@ -5372,7 +5372,12 @@
       "generateButton": "Generer",
       "generating": "Genererer...",
       "generationFailed": "Generering av spektrogram mislyktes",
-      "generationSuccess": "Spektrogram generert"
+      "generationSuccess": "Spektrogram generert",
+      "callAt": "Sterkeste sang ved {time}",
+      "callAtBand": "Sterkeste sang ved {time}, {band}",
+      "callTimeRange": "{start}–{end}",
+      "callBandRange": "{low}–{high} kHz",
+      "callOtherShaded": "Også de andre sangene i klippet er markert."
     }
   },
   "components": {

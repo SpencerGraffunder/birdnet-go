@@ -5372,7 +5372,12 @@
       "generateButton": "Generálás",
       "generating": "Generálás...",
       "generationFailed": "A spektrogram generálása sikertelen",
-      "generationSuccess": "A spektrogram sikeresen generálva"
+      "generationSuccess": "A spektrogram sikeresen generálva",
+      "callAt": "A leghangosabb hívás itt hallható: {time}",
+      "callAtBand": "A leghangosabb hívás itt hallható: {time}, {band}",
+      "callTimeRange": "{start}–{end}",
+      "callBandRange": "{low}–{high} kHz",
+      "callOtherShaded": "A klip további hívásai is kiemelve láthatók."
     }
   },
   "components": {

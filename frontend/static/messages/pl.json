@@ -5372,7 +5372,12 @@
       "generateButton": "Generuj",
       "generating": "Generowanie...",
       "generationFailed": "Nie udało się wygenerować spektrogramu",
-      "generationSuccess": "Spektrogram wygenerowany pomyślnie"
+      "generationSuccess": "Spektrogram wygenerowany pomyślnie",
+      "callAt": "Najgłośniejszy śpiew o {time}",
+      "callAtBand": "Najgłośniejszy śpiew o {time}, {band}",
+      "callTimeRange": "{start}–{end}",
+      "callBandRange": "{low}–{high} kHz",
+      "callOtherShaded": "Pozostałe wokalizacje w tym klipie również są zaznaczone."
     }
   },
   "components": {

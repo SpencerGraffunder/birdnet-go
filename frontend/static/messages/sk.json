@@ -5372,7 +5372,12 @@
       "generateButton": "Generovať",
       "generating": "Generuje sa...",
       "generationFailed": "Nepodarilo sa vygenerovať spektrogram",
-      "generationSuccess": "Spektrogram bol úspešne vygenerovaný"
+      "generationSuccess": "Spektrogram bol úspešne vygenerovaný",
+      "callAt": "Najhlasnejší spev v {time}",
+      "callAtBand": "Najhlasnejší spev v {time}, {band}",
+      "callTimeRange": "{start}–{end}",
+      "callBandRange": "{low}–{high} kHz",
+      "callOtherShaded": "Ostatné spevy v tomto klipe sú tiež zvýraznené."
     }
   },
   "components": {

@@ -5372,7 +5372,12 @@
       "generateButton": "Genereer",
       "generating": "Genereren ...",
       "generationFailed": "Spectrogram genereren is mislukt",
-      "generationSuccess": "Spectrogram is succesvol gegenereerd"
+      "generationSuccess": "Spectrogram is succesvol gegenereerd",
+      "callAt": "Luidste roep op {time}",
+      "callAtBand": "Luidste roep op {time}, {band}",
+      "callTimeRange": "{start}–{end}",
+      "callBandRange": "{low}–{high} kHz",
+      "callOtherShaded": "Ook de andere roepen in dit fragment zijn gemarkeerd."
     }
   },
   "components": {

@@ -5372,7 +5372,12 @@
       "generateButton": "Ģenerēt",
       "generating": "Ģenerē...",
       "generationFailed": "Neizdevās ģenerēt spektrogrammu",
-      "generationSuccess": "Spektrogramma veiksmīgi ģenerēta"
+      "generationSuccess": "Spektrogramma veiksmīgi ģenerēta",
+      "callAt": "Skaļākā dziesma {time}",
+      "callAtBand": "Skaļākā dziesma {time}, {band}",
+      "callTimeRange": "{start}–{end}",
+      "callBandRange": "{low}–{high} kHz",
+      "callOtherShaded": "Arī pārējās šī klipa dziesmas ir izcēltas."
     }
   },
   "components": {

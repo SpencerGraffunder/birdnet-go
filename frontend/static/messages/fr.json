@@ -5372,7 +5372,12 @@
       "generateButton": "Générer",
       "generating": "Génération en cours...",
       "generationFailed": "Échec de la génération du spectrogramme",
-      "generationSuccess": "Spectrogramme généré avec succès"
+      "generationSuccess": "Spectrogramme généré avec succès",
+      "callAt": "Cri le plus fort à {time}",
+      "callAtBand": "Cri le plus fort à {time}, {band}",
+      "callTimeRange": "{start}–{end}",
+      "callBandRange": "{low}–{high} kHz",
+      "callOtherShaded": "Les autres cris de ce clip sont également surlignés."
     }
   },
   "components": {

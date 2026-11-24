@@ -5372,7 +5372,12 @@
       "generateButton": "Gerar",
       "generating": "Gerando...",
       "generationFailed": "Falha ao gerar espectrograma",
-      "generationSuccess": "Espectrograma gerado com sucesso"
+      "generationSuccess": "Espectrograma gerado com sucesso",
+      "callAt": "Canto mais forte em {time}",
+      "callAtBand": "Canto mais forte em {time}, {band}",
+      "callTimeRange": "{start}–{end}",
+      "callBandRange": "{low}–{high} kHz",
+      "callOtherShaded": "Os demais cantos neste clipe também estão destacados."
     }
   },
   "components": {

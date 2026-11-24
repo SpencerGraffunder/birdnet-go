@@ -5372,7 +5372,12 @@
       "generateButton": "Generieren",
       "generating": "Wird generiert...",
       "generationFailed": "Spektrogramm-Generierung fehlgeschlagen",
-      "generationSuccess": "Spektrogramm erfolgreich generiert"
+      "generationSuccess": "Spektrogramm erfolgreich generiert",
+      "callAt": "Lautester Ruf bei {time}",
+      "callAtBand": "Lautester Ruf bei {time}, {band}",
+      "callTimeRange": "{start}–{end}",
+      "callBandRange": "{low}–{high} kHz",
+      "callOtherShaded": "Weitere Rufe in diesem Clip sind ebenfalls markiert."
     }
   },
   "components": {

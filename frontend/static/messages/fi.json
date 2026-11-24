@@ -5372,7 +5372,12 @@
       "generateButton": "Generoi",
       "generating": "Generoidaan...",
       "generationFailed": "Spektrogrammin generointi epäonnistui",
-      "generationSuccess": "Spektrogrammi generoitu onnistuneesti"
+      "generationSuccess": "Spektrogrammi generoitu onnistuneesti",
+      "callAt": "Koväänisin ääntely kohdassa {time}",
+      "callAtBand": "Koväänisin ääntely kohdassa {time}, {band}",
+      "callTimeRange": "{start}–{end}",
+      "callBandRange": "{low}–{high} kHz",
+      "callOtherShaded": "Myös muut tämän clipin ääntelyt on korostettu."
     }
   },
   "components": {

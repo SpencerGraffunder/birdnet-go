@@ -240,6 +240,12 @@ const translations: Record<string, string> = {
   'notifications.timeAgo.daysAgo': '{days}d ago',
   'forms.networkAddressList.remove': 'Remove {address}',
   'media.audio.seekValueText': '{current} of {total}',
+  // Where the call is, on the spectrogram and in its tooltip (mirrors en.json).
+  'media.spectrogram.callAt': 'Loudest call at {time}',
+  'media.spectrogram.callAtBand': 'Loudest call at {time}, {band}',
+  'media.spectrogram.callTimeRange': '{start}–{end}',
+  'media.spectrogram.callBandRange': '{low}–{high} kHz',
+  'media.spectrogram.callOtherShaded': 'Other calls in this clip are also shaded.',
   'settings.audio.soundCards.deleteConfirm': 'Remove sound card source "{name}"?',
   'settings.audio.streams.deleteConfirm': 'Remove stream "{name}"?',
 };

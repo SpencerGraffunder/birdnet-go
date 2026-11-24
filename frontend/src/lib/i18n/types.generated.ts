@@ -3968,6 +3968,11 @@ export type TranslationKey =
   | 'media.spectrogram.generating'
   | 'media.spectrogram.generationFailed'
   | 'media.spectrogram.generationSuccess'
+  | 'media.spectrogram.callAt' // params: time
+  | 'media.spectrogram.callAtBand' // params: time, band
+  | 'media.spectrogram.callTimeRange' // params: start, end
+  | 'media.spectrogram.callBandRange' // params: low, high
+  | 'media.spectrogram.callOtherShaded'
   | 'components.audio.spectrogramUnavailable'
   | 'components.audio.spectrogramLoading'
   | 'components.audio.spectrogramLoaded'
@@ -5285,6 +5290,10 @@ export type TranslationParams = {
   'media.audio.nowPlaying': { source: string | number };
   'media.audio.streamTitle': { source: string | number };
   'media.audio.playbackError': { details: string | number };
+  'media.spectrogram.callAt': { time: string | number };
+  'media.spectrogram.callAtBand': { time: string | number; band: string | number };
+  'media.spectrogram.callTimeRange': { start: string | number; end: string | number };
+  'media.spectrogram.callBandRange': { low: string | number; high: string | number };
   'components.audio.spectrogramForSpecies': { species: string | number };
   'components.audio.queuePosition': { position: string | number };
   'components.forms.numberField.adjustedToMinimum': { value: string | number };

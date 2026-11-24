@@ -13,6 +13,19 @@ export const HZ_PER_KHZ = 1000;
 /** The highest frequency a sampled signal holds is its rate divided by this. */
 export const NYQUIST_DIVISOR = 2;
 
+/**
+ * Top of the frequency axis of a bird spectrogram, in kHz: the bird pipeline
+ * resamples to 24 kHz (`birdResampleHz` in `internal/spectrogram/frequency_profile.go`),
+ * so the image spans 0-12 kHz. Keep in step with Go.
+ */
+export const BIRD_NYQUIST_KHZ = 12;
+
+/**
+ * The model type whose spectrogram spans half the clip's own capture rate instead of
+ * the bird range. Matches the `modelType` a detection reports.
+ */
+export const MODEL_TYPE_BAT = 'bat';
+
 /** Tick spacings (kHz) tried in order, from the finest to the coarsest. */
 const BAT_TICK_STEPS_KHZ = [10, 20, 40, 50, 100] as const;
 

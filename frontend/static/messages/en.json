@@ -5372,7 +5372,12 @@
       "generateButton": "Generate",
       "generating": "Generating...",
       "generationFailed": "Failed to generate spectrogram",
-      "generationSuccess": "Spectrogram generated successfully"
+      "generationSuccess": "Spectrogram generated successfully",
+      "callAt": "Loudest call at {time}",
+      "callAtBand": "Loudest call at {time}, {band}",
+      "callTimeRange": "{start}–{end}",
+      "callBandRange": "{low}–{high} kHz",
+      "callOtherShaded": "Other calls in this clip are also shaded."
     }
   },
   "components": {
