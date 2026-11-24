@@ -171,10 +171,7 @@ func (c *Cache) buildProviders(apiKey, userAgent string) {
 
 // resolveUserAgent is userAgent for a detached options snapshot.
 func resolveUserAgent(o Options) string { //nolint:gocritic // hugeParam: reads the snapshot Update was given
-	if o.UserAgent == "" {
-		return defaultUserAgent()
-	}
-	return o.UserAgent
+	return defaultUserAgentOr(o.UserAgent)
 }
 
 // Close stops the prefetch worker and waits for it to return, so a store that

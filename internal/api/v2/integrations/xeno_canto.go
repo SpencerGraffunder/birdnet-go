@@ -20,6 +20,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/tphakala/birdnet-go/internal/api/v2/apicore"
 	"github.com/tphakala/birdnet-go/internal/errors"
+	"github.com/tphakala/birdnet-go/internal/logger"
 	"github.com/tphakala/birdnet-go/internal/speciesaudio"
 )
 
@@ -104,6 +105,19 @@ func (c *Handler) TestXenoCantoConnection(ctx echo.Context) error {
 	result, message, err := probeXenoCanto(testCtx, request.APIKey, probe)
 	stage := WeatherTestStage{ID: "lookup", Title: "Recording Lookup"}
 	if err != nil {
+		// The browser is deliberately shown a sanitised message, which means
+		// the real reason only exists server-side. Without this line a failed
+		// test is undebuggable from the outside — the blank-User-Agent failure
+		// looked exactly like a server with no internet.
+		via := "keyless"
+		if request.APIKey != "" {
+			via = "api"
+		}
+		apicore.GetLogger().Warn("Xeno-Canto integration test failed",
+			logger.String("via", via),
+			logger.String("species", probe),
+			logger.Error(err),
+		)
 		stage.Status = "error"
 		stage.Error = sanitizeXenoCantoError(err, request.APIKey)
 		_ = sendStage(stage)
@@ -179,7 +193,13 @@ func sanitizeXenoCantoError(err error, apiKey string) string {
 	case errors.Is(err, speciesaudio.ErrSoundNotFound):
 		return "Xeno-Canto has no recording for the probe species."
 	case errors.Is(err, speciesaudio.ErrProviderUnavailable):
-		return "Xeno-Canto could not be reached. Check this server's internet access; with no API key set, Xeno-Canto's bot protection may also block the lookup."
+		// Say what THIS install actually did: with a key the bot-protection
+		// advice is noise, and pointing the user at a key they already entered
+		// sends them chasing the wrong thing.
+		if apiKey != "" {
+			return "Xeno-Canto did not answer the API request. Check this server's internet access, or try again shortly — Xeno-Canto sometimes serves an error page instead of results."
+		}
+		return "Xeno-Canto could not be reached. Check this server's internet access. With no API key set Xeno-Canto's bot protection usually blocks the lookup, so add a free key from your Xeno-Canto account page."
 	default:
 		return "Xeno-Canto lookup failed."
 	}

@@ -69,7 +69,7 @@ type Provider interface {
 func NewAPIProvider(apiKey, userAgent string) Provider {
 	return &apiProvider{
 		apiKey:    apiKey,
-		userAgent: userAgent,
+		userAgent: defaultUserAgentOr(userAgent),
 		endpoint:  apiEndpoint,
 		client:    httpclient.NewGuardedHTTPClient(requestTimeout),
 		pacer:     &pacer{minSpace: defaultAPISpace},
@@ -79,7 +79,7 @@ func NewAPIProvider(apiKey, userAgent string) Provider {
 // NewPageProvider returns the keyless species-listing provider.
 func NewPageProvider(userAgent string) Provider {
 	return &pageProvider{
-		userAgent: userAgent,
+		userAgent: defaultUserAgentOr(userAgent),
 		endpoint:  siteBase,
 		client:    httpclient.NewGuardedHTTPClient(requestTimeout),
 		pacer:     &pacer{minSpace: defaultPageSpace},
@@ -356,6 +356,13 @@ func (p *apiProvider) searchOnce(ctx context.Context, query string) ([]Sound, er
 
 	var parsed apiResponse
 	if err := json.Unmarshal(body, &parsed); err != nil {
+		// An HTML body at HTTP 200 is Xeno-Canto's bot page or a temporary
+		// fault, not a corrupt JSON payload: JSON starts with { or [, HTML with
+		// <. Say which, because the two have different cures — and an empty
+		// User-Agent causes exactly this one.
+		if head := strings.TrimLeft(string(body), " 	\r\n"); strings.HasPrefix(head, "<") {
+			return nil, fmt.Errorf("%w: xeno-canto returned an HTML page instead of JSON (bot protection, or a request it refused to answer)", ErrProviderUnavailable)
+		}
 		return nil, fmt.Errorf("%w: xeno-canto API returned an unreadable response", ErrProviderUnavailable)
 	}
 	if parsed.Error != "" {
