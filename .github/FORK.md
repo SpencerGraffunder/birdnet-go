@@ -66,18 +66,30 @@ ever wanted here.
   fork reached 5.2 GB with nothing evicting it.
 - `base-image.yml` — carries a fork patch: when this repo's registry has no base
   image but upstream published the identical tag, reuse
-  `ghcr.io/tphakala/birdnet-go-base:<tag>` instead of rebuilding. The
-  from-scratch recipe is currently broken by the ONNX removal below.
-- `.github/actions/setup-onnxruntime` — carries a fork patch. Microsoft made
+  `ghcr.io/tphakala/birdnet-go-base:<tag>` instead of rebuilding.
+- ONNX Runtime supply chain and its two fork patches. Microsoft made
   `microsoft/onnxruntime` private on 2026-11-17 while investigating malicious
   content published under the org, which removed the repository **and every
-  release asset**: the `releases/download/...` URLs answer 404 for all versions,
-  so `curl -fsSL` exits 22 and every job using that action failed (this was the
-  sole reason `golangci-test` was red on every push). GitHub Releases is still
-  tried first, so this heals when upstream returns; Linux falls back to the
-  `onnxruntime` wheel from PyPI — Microsoft's own package, with PyPI's published
-  sha256 verified before unpacking. Only the libraries are needed, since ONNX
-  Runtime is `dlopen`ed at runtime and never linked at compile time.
+  release asset**: the `releases/download/...` URLs answer 404 for all versions, so
+  nothing can fetch the library from GitHub. Both places that need it try GitHub
+  Releases **first**, so the fix heals itself if the org returns, and fall back to
+  the `onnxruntime` wheel from PyPI — Microsoft's own package:
+  - `.github/actions/setup-onnxruntime` (CI jobs, Linux): resolves the wheel from the
+    PyPI JSON API, verifies PyPI's published sha256, unpacks only the libraries.
+    Windows and darwin hard-fail with a reason instead — PyPI ships no MSVC import
+    library and no C-API dylib there.
+  - `Dockerfile` (`runtime-base`, which the image and its cold builds need): resolves
+    the cp313 manylinux wheel per arch, verifies it against the
+    `ONNXRUNTIME_PYPI_SHA256_X64` / `_AARCH64` ARGs pinned in the file (the repo
+    pins OpenVINO the same way) rather than against PyPI's own claim, and a mismatch
+    stops the build naming the ARG to update. Note PyPI tags the 64-bit wheel
+    `x86_64` where GitHub tags it `x64`.
+  Only the libraries are needed, since ONNX Runtime is `dlopen`ed at runtime and
+  never linked at compile time.
+- `container-test.yml` is the workflow that proves this, because it builds the image
+  from scratch on a runner. A green `docker-build` run is **not** proof the Dockerfile
+  can fetch anything: BuildKit satisfies that step from a cached layer, which is how
+  the `:dev` image kept building while every cold build failed here.
 - No Actions secrets, variables, environments or Pages exist on this fork;
   anything a workflow expects under `secrets.*` is unset here by design.
 
