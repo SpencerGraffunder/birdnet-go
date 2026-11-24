@@ -80,3 +80,24 @@ ever wanted here.
   Runtime is `dlopen`ed at runtime and never linked at compile time.
 - No Actions secrets, variables, environments or Pages exist on this fork;
   anything a workflow expects under `secrets.*` is unset here by design.
+
+## Branches, tags and inherited config
+
+- **Branches:** the fork carries exactly one branch, `main`. All 304 branches that a
+  fork inherits from upstream (every `fix/*`, `feature/*`, `feat/*`, `chore/*`,
+  `dependabot/*`, `release/v0.7`, `backup`, plus upstream's AI-agent scratch branch) were
+  deleted on 2026-11-24 after verifying each was byte-identical to the same-named upstream
+  branch, so none held fork work; all still exist on `tphakala/birdnet-go`. Rollback
+  manifest and restore script were kept off-repo at
+  `~/.hermes/cache/scratch/bnb-branch-rollback.tsv` / `bnb-branch-restore.sh`. Upstream
+  merges come from the upstream remote's `main`; nothing here needs upstream's branches.
+- **Tags:** all 102 upstream tags are kept. The version stamp derives from them
+  (`scripts/build-version.sh` / `git describe`), and deleting them would break the image's
+  version string and every `git describe` in the repo.
+- **Inert inherited config, kept on purpose** because these files cannot execute anything on
+  a fork and deleting them would re-conflict on every upstream merge: `dependabot.yml`
+  (Dependabot is not enabled on this fork — it has never opened a PR here),
+  `coderabbit.yaml` (the CodeRabbit app is not installed on this fork),
+  `pull_request_template.md`, and `FUNDING.yml`, whose sponsor link still points at the
+  upstream author, which is the correct destination for a derivative work.
+
