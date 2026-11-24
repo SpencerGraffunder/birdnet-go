@@ -2041,6 +2041,10 @@
           "$ref": "#/$defs/EBirdSettings",
           "description": "eBird integration settings"
         },
+        "xenocanto": {
+          "$ref": "#/$defs/XenoCantoSettings",
+          "description": "Xeno-Canto example-call settings"
+        },
         "privacyfilter": {
           "$ref": "#/$defs/PrivacyFilterSettings",
           "description": "Privacy filter settings"
@@ -3049,6 +3053,37 @@
       "additionalProperties": false,
       "type": "object",
       "description": "WundergroundSettings contains settings for WeatherUnderground integration."
+    },
+    "XenoCantoSettings": {
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "true to enable example-call lookups (default: true)"
+        },
+        "apikey": {
+          "type": "string",
+          "description": "Xeno-Canto API key (free personal key); needed in practice, since the keyless listing page answers anonymous clients with a bot challenge — with no key, no example calls resolve"
+        },
+        "maxclipseconds": {
+          "type": "integer",
+          "description": "MaxClipSeconds is the hard cap applied when a clip is stored: longer\nrecordings are trimmed to this length. Zero selects the default (10), a\nnegative value disables trimming."
+        },
+        "prefetch": {
+          "type": "boolean",
+          "description": "Prefetch downloads the example call the first time a species is seen, so\nthe play button works instantly for every species already detected."
+        },
+        "transcode": {
+          "type": "boolean",
+          "description": "Transcode converts stored clips to mp3 and trims them with ffmpeg. When\ndisabled the recording is stored exactly as published."
+        },
+        "maxcachespecies": {
+          "type": "integer",
+          "description": "MaxCacheSpecies caps how many species get a stored clip. 0 means no cap,\nwhich is the default: one short clip per species is a few hundred KB."
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "description": "XenoCantoSettings contains settings for the Xeno-Canto integration, which supplies the short example call played next to a species photo."
     },
     "YearlyTrackingSettings": {
       "properties": {

@@ -368,7 +368,7 @@ type EBirdSettings struct {
 // is never baked into a container image.
 type XenoCantoSettings struct {
 	Enabled bool   `yaml:"enabled" json:"enabled"` // true to enable example-call lookups (default: true)
-	APIKey  string `yaml:"apikey" json:"apiKey"`   // Xeno-Canto API key, empty to use the public listing page
+	APIKey  string `yaml:"apikey" json:"apiKey"`   // Xeno-Canto API key (free personal key); needed in practice, since the keyless listing page answers anonymous clients with a bot challenge — with no key, no example calls resolve
 	// MaxClipSeconds is the hard cap applied when a clip is stored: longer
 	// recordings are trimmed to this length. Zero selects the default (10), a
 	// negative value disables trimming.

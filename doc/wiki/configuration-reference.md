@@ -284,6 +284,12 @@ RealtimeSettings contains all settings related to realtime processing.
 | `realtime.ebird.apikey` | string | eBird API key |
 | `realtime.ebird.cachettl` | integer | cache time-to-live in hours (default: 24) |
 | `realtime.ebird.locale` | string | locale for eBird data (e.g., "en", "es") |
+| `realtime.xenocanto.enabled` | boolean | true to enable example-call lookups (default: true) |
+| `realtime.xenocanto.apikey` | string | Xeno-Canto API key (free personal key); needed in practice, since the keyless listing page answers anonymous clients with a bot challenge — with no key, no example calls resolve |
+| `realtime.xenocanto.maxclipseconds` | integer | MaxClipSeconds is the hard cap applied when a clip is stored: longer recordings are trimmed to this length. Zero selects the default (10), a negative value disables trimming. |
+| `realtime.xenocanto.prefetch` | boolean | Prefetch downloads the example call the first time a species is seen, so the play button works instantly for every species already detected. |
+| `realtime.xenocanto.transcode` | boolean | Transcode converts stored clips to mp3 and trims them with ffmpeg. When disabled the recording is stored exactly as published. |
+| `realtime.xenocanto.maxcachespecies` | integer | MaxCacheSpecies caps how many species get a stored clip. 0 means no cap, which is the default: one short clip per species is a few hundred KB. |
 | `realtime.privacyfilter.debug` | boolean | true to enable debug mode |
 | `realtime.privacyfilter.enabled` | boolean | true to enable privacy filter |
 | `realtime.privacyfilter.confidence` | number | confidence threshold for label-based human detection |
