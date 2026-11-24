@@ -9,16 +9,12 @@ name: cross-platform-build
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - '**/*.go'
-      - 'go.mod'
-      - 'go.sum'
-      - 'Taskfile.yml'
-      - '.github/workflows/cross-platform-build.yml'
-      - '.github/actions/**'
+  # Fork note (SpencerGraffunder/birdnet-go, 2026-11-23): the `push` trigger was
+  # removed to cut this fork's Actions usage (GitHub disabled the fork's
+  # workflows over "the scale of GitHub Actions usage"). The fork deploys a
+  # Linux/amd64 container built by docker-build.yml, which does the same
+  # compile gate for what actually ships. Still runs on pull requests and
+  # manual dispatch. Re-remove it if a merge restores the block.
   pull_request:
     paths:
       - '**/*.go'

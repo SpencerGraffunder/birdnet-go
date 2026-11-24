@@ -12,16 +12,13 @@ name: macos-test
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - '**/*.go'
-      - 'go.mod'
-      - 'go.sum'
-      - 'Taskfile.yml'
-      - '.github/workflows/macos-test.yml'
-      - '.github/actions/**'
+  # Fork note (SpencerGraffunder/birdnet-go, 2026-11-23): the `push` trigger was
+  # removed. This fork ships one Linux container image, and GitHub disabled the
+  # fork's Actions with "workflows are not currently being run on this fork due
+  # to the scale of GitHub Actions usage". macOS minutes are the heavily weighted
+  # ones and this job is already continue-on-error, so it gates nothing here.
+  # It still runs in full on pull requests and on manual dispatch, and upstream
+  # keeps the push trigger. If this block is restored by a merge, re-remove it.
   pull_request:
     # Include labeled/unlabeled so adding or removing the `full-ci` label
     # re-evaluates the job gate immediately instead of waiting for the next push.

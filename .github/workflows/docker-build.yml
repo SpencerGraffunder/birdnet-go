@@ -6,9 +6,11 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  schedule:
-    # Runs at 02:00 UTC every day
-    - cron: "0 2 * * *"
+  # Fork note (SpencerGraffunder/birdnet-go, 2026-11-23): the inherited
+  # `schedule: cron 0 2 * * *` was removed. The `dev` job gate below already
+  # excludes schedule events, so the nightly never built anything — it only
+  # added an empty run to the repo every day, which is usage the fork gets
+  # counted for. Re-add it if upstream ever makes the cron meaningful.
   workflow_dispatch:
     inputs:
       channel:
