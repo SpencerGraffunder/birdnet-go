@@ -225,6 +225,7 @@
     align-items: center;
     gap: 0.35rem;
     min-width: 0;
+
     /* One fixed line: a control whose height depends on whether a species has a
        call would change the height of the card around it. */
     min-height: 1.5rem;

@@ -50,6 +50,7 @@ import {
   disconnectAudioNodes,
   type AudioNodeChain,
 } from '$lib/utils/audioNodes';
+import { followSinglePlayback } from '$lib/utils/playbackLease';
 import { t } from '$lib/i18n';
 import { loggers } from '$lib/utils/logger';
 
@@ -552,6 +553,9 @@ export function useAudioPlayback(options: AudioPlaybackOptions): AudioPlaybackSt
     audio.preload = 'metadata';
     audio.src = audioUrl;
     audioElement = audio;
+
+    // Starting this row must silence whatever else was playing (see playbackLease).
+    followSinglePlayback(audio);
 
     // --- Event listeners ---
     addTrackedEventListener(audio, 'play', () => {

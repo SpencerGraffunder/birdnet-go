@@ -96,6 +96,7 @@
     type SpectrogramImageGeometry,
   } from '$lib/utils/callOverlay';
   import { useCallOverlay, callOverlayText } from '$lib/utils/useCallOverlay.svelte';
+  import { followSinglePlayback } from '$lib/utils/playbackLease';
   import CallRegionOverlay from './CallRegionOverlay.svelte';
   import { get } from 'svelte/store';
   import { dashboardSettings } from '$lib/stores/settings';
@@ -2387,6 +2388,9 @@
     audioElement.preload = 'metadata';
     audioElement.src = audioUrl;
     audioElement.id = audioId;
+
+    // Starting this clip must silence whatever else was playing (see playbackLease).
+    followSinglePlayback(audioElement);
 
     // Check if mobile
     isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;

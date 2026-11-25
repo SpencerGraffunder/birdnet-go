@@ -44,6 +44,7 @@
     probeAudioSource,
   } from '$lib/utils/audio';
   import { isSpectrogramSourceKnownMissing } from '$lib/utils/spectrogramStatus';
+  import { followSinglePlayback } from '$lib/utils/playbackLease';
   import {
     getAudioContext,
     isAudioContextSupported,
@@ -735,6 +736,9 @@
     audioElement = new Audio();
     audioElement.preload = 'metadata';
     audioElement.src = audioUrl;
+
+    // Starting this clip must silence whatever else was playing (see playbackLease).
+    followSinglePlayback(audioElement);
 
     // Attach all event listeners
     audioElement.addEventListener('play', handlePlay);
